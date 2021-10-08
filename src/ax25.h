@@ -34,8 +34,6 @@ typedef struct{
 /***********************************************
  *              Function Prototypes            *
  ***********************************************/
-
-void AX25_prepareUIFrame(uint8 *buffer, char *info, unsigned int length_info_field);
 void AX25_prepareIFrame(TX_FRAME*);
 void printTxFrame(TX_FRAME *tx_ptr);
 

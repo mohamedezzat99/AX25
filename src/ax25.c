@@ -57,6 +57,7 @@ void AX25_prepareIFrame(TX_FRAME *frame) {
 	frame->control = (frame->control & 0xF1) | ((NS << 1) & 0x0E);	/* insert N(S) into control field */
 	frame->control &=~(1<<0);										/* put zero in BIT0 of control field as in page 16 I frame */
 	frame->control &=~(1<<4);										/* clear P bit as it's not used as stated in section 6.2 */
+
 	uint16 i;
 	for (i = 0; i < ADDR_L; i++) {
 		frame->address[i] = AX25_txAddressField[i];
@@ -105,26 +106,3 @@ void printTxFrame(TX_FRAME *tx_ptr)
 
 
 
-
-#if 0
-void AX25_prepareUIFrame(uint8 *buffer, char *info, unsigned int lengthInfoField) {
-
-	int i;
-	/* make sure it's max size is 256 */
-	if (lengthInfoField > 256) {
-		lengthInfoField = 256;
-	}
-	/* insert flags at start and end */
-	buffer[0] = g_flag;
-	buffer[lengthInfoField-1]= g_flag;
-
-	/* insert address field */
-	for (i = 1; i < ADDR_L; i++) {
-		buffer[i] = AX25_txAddressField[ i -1];
-	}
-	/* insert control */
-	buffer
-	/* insert PID */
-	buffer[i+8] = g_PID;
-}
-#endif
