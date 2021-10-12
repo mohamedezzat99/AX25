@@ -19,7 +19,7 @@ void AX25_prepareIFrame(TX_FRAME *frame) {
 	frame->pid = 0xF0; /* PID : 0xF0 (no layer 3 protocol implemented) */
 	uint8 SSID_OctetDest = 0, SSID_OctetSource = 0;
 	/*--------------------------------------------------------------------------*
-	 * AX.25 TX header : < Address     | Control    |  PID   >
+	 * AX.25 TX header : < Address  | Control  |  PID   >
 	 *                   < 14 bytes |  1 byte  | 1byte  >
 	 *
 	 *	 - Frame address data from page 10 in documentation
