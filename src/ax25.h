@@ -18,7 +18,7 @@
  ***********************************************/
 #define INFO_MAX_SIZE        256	// Max number of bytes for Info field. (256 is the default value).
 #define AX25_FRAME_MAX_SIZE  276	// Max number of bytes for an AX25 UI-frame. (1+14+1+1+256+2+1).
-#define ADDR_L 14					// could be 14 or 28
+#define ADDR_L 14					// Address length in bytes
 #define INFO_L 256					// default length
 
 typedef struct{

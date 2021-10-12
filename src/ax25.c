@@ -12,31 +12,37 @@
 #include <stdlib.h>
 #include "ax25.h"
 
-uint8 g_flag = 0x7E;
-/*--------------------------------------------------------------------------*
- * AX.25 TX header : < Address     | Control    |  PID   >
- *                   < 14/28 bytes |  1/2 byte  | 1byte  >
- *
- *	 - Frame address data from page 10 in documentation
- *   - Address : Destination = NJ7P  (+ 2 spaces), SSID = 0x60
- *   - Address : Source = N7LEM (+ 1 space) , SSID = 0xE0
- *
- *  NB : Characters coded in standard ASCII 7-bits with LSB (HDLC extension
- *      bit) set to 0. Except for the last SSID (means that's the last byte).
- *
- *   - PID     : 0xF0 (no layer 3 protocol implemented)
- *--------------------------------------------------------------------------*/
-
-uint8 g_PID = 0xF0;
-
-static const uint8 AX25_txAddressField[ADDR_L] = { 'N', 'J', '7', 'P', ' ', ' ',
-		0xE0, 'N', '7', 'L', 'E', 'M', ' ', 0x61 };
-
 void AX25_prepareIFrame(TX_FRAME *frame) {
 	static uint8 NR = 0;
 	static uint8 NS = 0;
 	frame->flag = 0x7E;
-	frame->pid = 0xF0;
+	frame->pid = 0xF0; /* PID : 0xF0 (no layer 3 protocol implemented) */
+	uint8 SSID_OctetDest = 0, SSID_OctetSource = 0;
+	/*--------------------------------------------------------------------------*
+	 * AX.25 TX header : < Address     | Control    |  PID   >
+	 *                   < 14 bytes |  1 byte  | 1byte  >
+	 *
+	 *	 - Frame address data from page 10 in documentation
+	 *   - Address : Destination = NJ7P  (+ 2 spaces), SSID
+	 *   - Address : Source = N7LEM (+ 1 space) , SSID
+	 *--------------------------------------------------------------------------*/
+
+	static uint8 AX25_txAddressField[ADDR_L] = { 'N', 'J', '7', 'P', ' ', ' ',
+			SSID_OctetDest, 'N', '7', 'L', 'E', 'M', ' ', SSID_OctetSource };
+
+	/******************************
+	 *    config SSID subfield
+	 *******************************/
+	uint8 SSIDSource = 0xf;
+	uint8 SSIDDest = 0xe;
+
+	SSID_OctetSource |= (1 << 0); /* set X bit */
+	SSID_OctetSource |= ((SSIDSource & 0x0F) << 1); /* insert SSID into the SSID octet */
+	/* todo: insert C bit*/
+
+	SSID_OctetDest |= (SSIDDest << 1); /* insert SSID into the SSID octet */
+	/* todo: insert C bit*/
+
 	/******************************
 	 *    config control field
 	 ******************************/
