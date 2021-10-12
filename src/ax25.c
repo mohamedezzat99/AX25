@@ -29,21 +29,8 @@ uint8 g_flag = 0x7E;
 
 uint8 g_PID = 0xF0;
 
-
-#if(ADDR_L == 14)
-
-static const uint8 AX25_txAddressField[ADDR_L] = { 'N' << 1, 'J' << 1, '7'
-		<< 1, 'P' << 1, ' ' << 1, ' ' << 1, 0xE0, 'N' << 1, '7' << 1, 'L' << 1,
-		'E' << 1, 'M' << 1, ' ' << 1, 0x61 };
-
-#elif(ADDR_L == 28)
-
-static const uint8 AX25_txAddressField[ADDR_L] = { 'N' << 1, 'J' << 1, '7' << 1, 'P' << 1, ' '
-		<< 1, ' ' << 1, 'N' << 1, 'J' << 1, '7' << 1, 'P' << 1, ' '
-		<< 1, ' ' << 1, 0xE0 , 'N' << 1, '7' << 1, 'L' << 1, 'E' << 1, 'M'
-		<< 1, ' ' << 1, 'N' << 1, '7' << 1, 'L' << 1, 'E' << 1, 'M'
-		<< 1, ' ' << 1, 0x61};
-#endif
+static const uint8 AX25_txAddressField[ADDR_L] = { 'N', 'J', '7', 'P', ' ', ' ',
+		0xE0, 'N', '7', 'L', 'E', 'M', ' ', 0x61 };
 
 void AX25_prepareIFrame(TX_FRAME *frame) {
 	static uint8 NR = 0;
@@ -53,10 +40,10 @@ void AX25_prepareIFrame(TX_FRAME *frame) {
 	/******************************
 	 *    config control field
 	 ******************************/
-	frame->control = (frame->control & 0x1F) | ((NR << 5) & 0xE0); 	/* insert N(R) into control field */
-	frame->control = (frame->control & 0xF1) | ((NS << 1) & 0x0E);	/* insert N(S) into control field */
-	frame->control &=~(1<<0);										/* put zero in BIT0 of control field as in page 16 I frame */
-	frame->control &=~(1<<4);										/* clear P bit as it's not used as stated in section 6.2 */
+	frame->control = (frame->control & 0x1F) | ((NR << 5) & 0xE0); /* insert N(R) into control field */
+	frame->control = (frame->control & 0xF1) | ((NS << 1) & 0x0E); /* insert N(S) into control field */
+	frame->control &= ~(1 << 0); /* put zero in BIT0 of control field as in page 16 I frame */
+	frame->control &= ~(1 << 4); /* clear P bit as it's not used as stated in section 6.2 */
 
 	uint16 i;
 	for (i = 0; i < ADDR_L; i++) {
@@ -64,45 +51,20 @@ void AX25_prepareIFrame(TX_FRAME *frame) {
 	}
 	NR++;
 	NS++;
-	if(NR > 7 || NS > 7)
-	{
+	if (NR > 7 || NS > 7) {
 		NR = 0;
 		NS = 0;
 	}
 }
-void printTxFrame(TX_FRAME *tx_ptr)
-{
+void printTxFrame(TX_FRAME *tx_ptr) {
 	int i;
-	printf("flag : %x \n",tx_ptr->flag);
+	printf("flag : %x \n", tx_ptr->flag);
 	printf("Address: \n");
-	for(i=0; i< ADDR_L;i++)
-	{
-		printf("\t %x \n",tx_ptr->address[i]);
+	for (i = 0; i < ADDR_L; i++) {
+		printf("\t %x \n", tx_ptr->address[i]);
 	}
 	printf("control: %x\n", tx_ptr->control);
 	printf("PID : %x \n", tx_ptr->pid);
-	printf("flag : %x \n",tx_ptr->flag);
+	printf("flag : %x \n", tx_ptr->flag);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
