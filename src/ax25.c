@@ -37,19 +37,19 @@ void AX25_prepareIFrame(TX_FRAME *frame) {
 	uint8 SSIDDest = 0xe;
 
 	SSID_OctetSource |= (1 << 0); /* set X bit */
-	SSID_OctetSource |= ((SSIDSource & 0x0F) << 1); /* insert SSID into the SSID octet */
+	SSID_OctetSource |= ((SSIDSource & 0x0F) << 1);					/* insert SSID into the SSID octet */
 	/* todo: insert C bit*/
 
-	SSID_OctetDest |= (SSIDDest << 1); /* insert SSID into the SSID octet */
+	SSID_OctetDest |= (SSIDDest << 1); 								/* insert SSID into the SSID octet */
 	/* todo: insert C bit*/
 
 	/******************************
 	 *    config control field
 	 ******************************/
-	frame->control = (frame->control & 0x1F) | ((NR << 5) & 0xE0); /* insert N(R) into control field */
-	frame->control = (frame->control & 0xF1) | ((NS << 1) & 0x0E); /* insert N(S) into control field */
-	frame->control &= ~(1 << 0); /* put zero in BIT0 of control field as in page 16 I frame */
-	frame->control &= ~(1 << 4); /* clear P bit as it's not used as stated in section 6.2 */
+	frame->control = (frame->control & 0x1F) | ((NR << 5) & 0xE0);	/* insert N(R) into control field */
+	frame->control = (frame->control & 0xF1) | ((NS << 1) & 0x0E); 	/* insert N(S) into control field */
+	frame->control &= ~(1 << 0); 									/* put zero in BIT0 of control field as in page 16 I frame */
+	frame->control &= ~(1 << 4); 									/* clear P bit as it's not used as stated in section 6.2 */
 
 	uint16 i;
 	for (i = 0; i < ADDR_L; i++) {
