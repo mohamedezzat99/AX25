@@ -40,11 +40,11 @@ void AX25_prepareIFrame(TX_FRAME *frame) {
 	uint8 SSIDSource = 0xf;
 	uint8 SSIDDest = 0xe;
 
-	SSID_OctetSource |= (1 << 0); 									/* set X bit */
-	SSID_OctetSource |= ((SSIDSource & 0x0F) << 1);					/* insert SSID into the SSID octet */
+	SSID_OctetSource |= (1 << 0);											/* set X bit */
+	SSID_OctetSource |= ((SSIDSource & 0x0F) << 1);							/* insert SSID into the SSID octet */
 	/* todo: insert C bit*/
 
-	SSID_OctetDest |= (SSIDDest << 1); 								/* insert SSID into the SSID octet */
+	SSID_OctetDest |= (SSIDDest << 1);										/* insert SSID into the SSID octet */
 	/* todo: insert C bit*/
 
 	for (uint16 i = 0; i < ADDR_L; i++) {
@@ -73,9 +73,9 @@ void printTxFrame(TX_FRAME *tx_ptr) {
 IframeControlField(TX_FRAME * frame)
 {
 	frame->control = (frame->control & 0x1F) | ((NR << 5) & 0xE0);			/* insert N(R) into control field */
-	frame->control = (frame->control & 0xF1) | ((NS << 1) & 0x0E); 			/* insert N(S) into control field */
-	frame->control &= ~(1 << 0); 											/* put zero in BIT0 of control field as in page 3 I frame */
-	frame->control &= ~(1 << 4); 											/* clear P bit as it's not used as stated in section 6.2 */
+	frame->control = (frame->control & 0xF1) | ((NS << 1) & 0x0E);			/* insert N(S) into control field */
+	frame->control &= ~(1 << 0);											/* put zero in BIT0 of control field as in page 3 I frame */
+	frame->control &= ~(1 << 4);											/* clear P bit as it's not used as stated in section 6.2 */
 
 	NR++;
 	NS++;
@@ -89,7 +89,7 @@ IframeControlField(TX_FRAME * frame)
 
 SframeControlField(TX_FRAME * frame)
 {
-	frame->control = 1; 													/* to initially make two LSB = 01 */
+	frame->control = 1;														/* to initially make two LSB = 01 */
 	frame->control = (frame->control & 0x1F) | ((NR << 5) & 0xE0);			/* insert N(R) into control field */
 	/* todo: p/f */
 	if(RRFrame)
@@ -108,7 +108,7 @@ SframeControlField(TX_FRAME * frame)
 	{
 		SSBits=3;
 	}
-	frame->control = (frame->control & 0xF3) | ((SSBits << 2) & 0x0C); 		/* insert SS Bits into control field */
+	frame->control = (frame->control & 0xF3) | ((SSBits << 2) & 0x0C);		/* insert SS Bits into control field */
 
 
 
