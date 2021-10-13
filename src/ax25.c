@@ -12,9 +12,9 @@
 #include <stdlib.h>
 #include "ax25.h"
 
-	/*--------------------------------------------------------------------------*
-	 *                         Global Variables                                 *
-	 *--------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------*
+ *                         Global Variables                                 *
+ *--------------------------------------------------------------------------*/
 uint8 NR = 0;
 uint8 NS = 0;
 
@@ -40,11 +40,11 @@ void AX25_prepareIFrame(TX_FRAME *frame) {
 	uint8 SSIDSource = 0xf;
 	uint8 SSIDDest = 0xe;
 
-	SSID_OctetSource |= (1 << 0);											/* set X bit */
-	SSID_OctetSource |= ((SSIDSource & 0x0F) << 1);							/* insert SSID into the SSID octet */
+	SSID_OctetSource |= (1 << 0); /* set X bit */
+	SSID_OctetSource |= ((SSIDSource & 0x0F) << 1); /* insert SSID into the SSID octet */
 	/* todo: insert C bit*/
 
-	SSID_OctetDest |= (SSIDDest << 1);										/* insert SSID into the SSID octet */
+	SSID_OctetDest |= (SSIDDest << 1); /* insert SSID into the SSID octet */
 	/* todo: insert C bit*/
 
 	for (uint16 i = 0; i < ADDR_L; i++) {
@@ -70,51 +70,39 @@ void printTxFrame(TX_FRAME *tx_ptr) {
 	printf("flag : %x \n", tx_ptr->flag);
 }
 
-IframeControlField(TX_FRAME * frame)
-{
-	frame->control = (frame->control & 0x1F) | ((NR << 5) & 0xE0);			/* insert N(R) into control field */
-	frame->control = (frame->control & 0xF1) | ((NS << 1) & 0x0E);			/* insert N(S) into control field */
-	frame->control &= ~(1 << 0);											/* put zero in BIT0 of control field as in page 3 I frame */
-	frame->control &= ~(1 << 4);											/* clear P bit as it's not used as stated in section 6.2 */
+IframeControlField(TX_FRAME *frame) {
+	frame->control = (frame->control & 0x1F) | ((NR << 5) & 0xE0); /* insert N(R) into control field */
+	frame->control = (frame->control & 0xF1) | ((NS << 1) & 0x0E); /* insert N(S) into control field */
+	frame->control &= ~(1 << 0); /* put zero in BIT0 of control field as in page 3 I frame */
+	frame->control &= ~(1 << 4); /* clear P bit as it's not used as stated in section 6.2 */
 
 	NR++;
 	NS++;
 	if (NR > 7) {
 		NR = 0;
 	}
-	if(NS > 7){
-		NS=0;
+	if (NS > 7) {
+		NS = 0;
 	}
 }
 
-SframeControlField(TX_FRAME * frame)
-{
-	frame->control = 1;														/* to initially make two LSB = 01 */
-	frame->control = (frame->control & 0x1F) | ((NR << 5) & 0xE0);			/* insert N(R) into control field */
+SframeControlField(TX_FRAME *frame) {
+	frame->control = 1; /* to initially make two LSB = 01 */
+	frame->control = (frame->control & 0x1F) | ((NR << 5) & 0xE0); /* insert N(R) into control field */
 	/* todo: p/f */
-	if(RRFrame)
-	{
-		SSBits=0;
+	if (RRFrame) {
+		SSBits = 0;
+	} else if (RNR) {
+		SSBits = 1;
+	} else if (REJ) {
+		SSBits = 2;
+	} else if (SREJ) {
+		SSBits = 3;
 	}
-	else if(RNR)
-	{
-		SSBits=1;
-	}
-	else if(REJ)
-	{
-		SSBits=2;
-	}
-	else if(SREJ)
-	{
-		SSBits=3;
-	}
-	frame->control = (frame->control & 0xF3) | ((SSBits << 2) & 0x0C);		/* insert SS Bits into control field */
-
-
+	frame->control = (frame->control & 0xF3) | ((SSBits << 2) & 0x0C); /* insert SS Bits into control field */
 
 }
 
-UframeControlField()
-{
+UframeControlField() {
 
 }
