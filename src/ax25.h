@@ -25,7 +25,6 @@ typedef struct{
 	uint8 flag;
 	uint8 address[ADDR_L];
 	uint8 control;
-	uint8 pid;
 	uint8 info[INFO_L];
 	uint16 fcs;
 }TX_FRAME;
