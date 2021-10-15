@@ -1,7 +1,7 @@
 /*
  ============================================================================
  Name        : AX25.c
- Author      : 
+ Author      : Mohamed Ezzat
  Version     :
  Copyright   : Your copyright notice
  Description : Form AX25 frame structure
@@ -11,16 +11,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ax25.h"
+#include "AX25_CRC.h"
 
-/*--------------------------------------------------------------------------*
- *                         Global Variables                                 *
- *--------------------------------------------------------------------------*/
-uint8 NR = 0;
-uint8 NS = 0;
+void AX25_prepareIFrame(uint8 *buffer, uint8 *info, uint32 frameSize, uint8 * ADDR, uint8 control, uint8 * padding) {
+	int i;
+  /* Set the length of the frame to lengthInfoField + 19 bytes (address + control + FCS + 2 flags). */
 
-void AX25_prepareIFrame(TX_FRAME *frame) {
+  /* Put flags at the right place in the buffer. */
+  buffer[0] = buffer[frameSize-1] = 0x7E;
 
-	frame->flag = 0x7E;
+  /* Add the address in the buffer. */
+  for(i=1; i < ADDR_LEN + ADDR_OFFSET; i++) {
+    buffer[i] = ADDR[i-1];
+  }
+  /* Add the control byte */
+  for(;i<CNTRL_OFFSET+CNTRL_LEN;i++){
+	  buffer[i] = control;
+  }
+  /* Add the info field in the buffer. */
+  for(; i < (INFO_OFFSET+INFO_MAX_SIZE); i++) {
+    buffer[i] = *info;
+    info++;
+  }
+  for(;i<PADDING_OFFSET+PADDING_LEN;i++){
+	  buffer[i] = *padding;
+	  padding++;
+  }
+
+  /* Calculation and insertion of the FCS in the buffer. */
+  AX25_putCRC(buffer, frameSize);
+}
+
+#if 0
+void AX25_prepareIFrame(TX_FRAME *frame, uint8 control) {
+
+	frame[0] = 0x7E;
 	uint8 SSID_OctetDest = 0, SSID_OctetSource = 0;
 	/*--------------------------------------------------------------------------*
 	 * AX.25 TX header : < Address  | Control >
@@ -59,15 +84,10 @@ void AX25_prepareIFrame(TX_FRAME *frame) {
 	UframeControlField();
 
 }
-void printTxFrame(TX_FRAME *tx_ptr) {
-	int i;
-	printf("flag : %x \n", tx_ptr->flag);
-	printf("Address: \n");
-	for (i = 0; i < ADDR_L; i++) {
-		printf("\t %x \n", tx_ptr->address[i]);
+void printTxFrame(uint8 * tx_ptr, uint16 size) {
+	for (uint16 i = 0; i < size; i++) {
+		printf("%d", tx_ptr[i]);
 	}
-	printf("control: %x\n", tx_ptr->control);
-	printf("flag : %x \n", tx_ptr->flag);
 }
 
 IframeControlField(TX_FRAME *frame) {
@@ -90,6 +110,7 @@ SframeControlField(TX_FRAME *frame) {
 	frame->control = 1; /* to initially make two LSB = 01 */
 	frame->control = (frame->control & 0x1F) | ((NR << 5) & 0xE0); /* insert N(R) into control field */
 	/* todo: p/f */
+
 	if (RRFrame) {
 		SSBits = 0;
 	} else if (RNR) {
@@ -105,4 +126,4 @@ SframeControlField(TX_FRAME *frame) {
 
 UframeControlField() {
 
-}
+#endif
