@@ -3,6 +3,5 @@
 AX25 Protocol
 
 ## tasks
-
-- add info field
-- add CRC16
+- Recieve array on serial
+- tracking of size
