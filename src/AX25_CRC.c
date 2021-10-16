@@ -18,53 +18,38 @@
  * RETURN:
  * the CRC with a final XORed operation.
  *--------------------------------------------------------------------------*/
-uint16 AX25_computeCRC(uint8 *buffer, uint16 size_frame) {
-  unsigned int i, j;
-  unsigned short shiftRegister, outBit;
-  char byte;
+void AX25_computeCRC(uint8 *buffer, uint16 * OpArrSize) {
+	unsigned int i, j;
+	unsigned short shiftRegister, outBit;
+	char byte;
+	uint16 crc;
+	// The last flag and the 2 bytes for FCS are removed.
+	// size_frame = size_frame - 3;
 
-  // The last flag and the 2 bytes for FCS are removed.
-  size_frame = size_frame - 3;
+	// Initialization of the Shift Register to 0xFFFF
+	shiftRegister = 0xFFFF;
 
-  // Initialization of the Shift Register to 0xFFFF
-  shiftRegister = 0xFFFF;
+	for(i=1 ; i<*OpArrSize; i++) {  // The first flag is not calculated so i=1.
+		byte = buffer[i];
 
-  for(i=1 ; i<size_frame; i++) {  // The first flag is not calculated so i=1.
-    byte = buffer[i];
+		for(j=0; j<8; j++) {
+			outBit = shiftRegister & 0x0001;
+			shiftRegister >>= 0x01;  // Shift the register to the right.
 
-    for(j=0; j<8; j++) {
-      outBit = shiftRegister & 0x0001;
-      shiftRegister >>= 0x01;  // Shift the register to the right.
-
-      if(outBit != (byte & 0x01)) {
-        shiftRegister ^= 0x8408;  // Mirrored polynom.
-        byte >>= 0x01;
-        continue;
-      }
-      byte >>= 0x01;
-    }
-  }
-  return shiftRegister ^ 0xFFFF;  // Final XOR.
-}
-
-/*--------------------------------------------------------------------------*
- * AX.25 FCS positioning.
- * Put the FCS in the right place in the frame. The FCS is sent MSB first
- * so we prepare the 15th bit of the CRC to be sent first.
- *
- * PARAMETERS:
- * *frame        pointer of the frame buffer.
- * size_frame    length of the frame (in bytes).
- *--------------------------------------------------------------------------*/
-void AX25_putCRC(uint8 *frame, uint16 size_frame) {
-  uint16 crc;
-
-  // FCS calculation.
-  crc = AX25_computeCRC(frame, size_frame); 
-
-  // Put the FCS in the right place with the 15th bit to be sent first.
-  frame[size_frame - 3] = (crc & 0xff);
-  frame[size_frame - 2] = ((crc >> 8) & 0xff);
+			if(outBit != (byte & 0x01)) {
+				shiftRegister ^= 0x8408;  // Mirrored polynom.
+				byte >>= 0x01;
+				continue;
+			}
+			byte >>= 0x01;
+		}
+	}
+	crc = shiftRegister ^ 0xFFFF;  // Final XOR, FCS calculation.
+	// Put the FCS in the right place with the 15th bit to be sent first.
+	buffer[*OpArrSize] = (crc & 0xff);
+	*OpArrSize=*OpArrSize+1;
+	buffer[*OpArrSize] = ((crc >> 8) & 0xff);
+	*OpArrSize=*OpArrSize+1;
 }
 
 

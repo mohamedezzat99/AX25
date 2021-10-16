@@ -13,11 +13,11 @@
 #include "ax25.h"
 #include "AX25_CRC.h"
 
-void AX25_prepareIFrame(uint8 *buffer, uint8 *info, uint32 frameSize, uint8 * ADDR, uint8 control, uint8 * padding) {
-	int i;
+void AX25_prepareIFrame(uint8 *buffer, uint8 *info, uint16 * frameSize, uint8 * ADDR, uint8 control, uint8 * padding) {
+	uint16 i;
 
   /* Put flags at the right place in the buffer. */
-  buffer[0] = buffer[frameSize-1] = 0x7E;
+  buffer[0] = 0x7E;
 
   /* Add the address in the buffer. */
   for(i=1; i < ADDR_LEN + ADDR_OFFSET; i++) {
@@ -37,8 +37,11 @@ void AX25_prepareIFrame(uint8 *buffer, uint8 *info, uint32 frameSize, uint8 * AD
 	  padding++;
   }
 
+
   /* Calculation and insertion of the FCS in the buffer. */
-  AX25_putCRC(buffer, frameSize);
+  AX25_computeCRC(buffer, &i);
+  buffer[i]=0x7E;
+  *frameSize=i+1;
 }
 
 #if 0
