@@ -15,7 +15,6 @@
 
 void AX25_prepareIFrame(uint8 *buffer, uint8 *info, uint32 frameSize, uint8 * ADDR, uint8 control, uint8 * padding) {
 	int i;
-  /* Set the length of the frame to lengthInfoField + 19 bytes (address + control + FCS + 2 flags). */
 
   /* Put flags at the right place in the buffer. */
   buffer[0] = buffer[frameSize-1] = 0x7E;
@@ -29,7 +28,7 @@ void AX25_prepareIFrame(uint8 *buffer, uint8 *info, uint32 frameSize, uint8 * AD
 	  buffer[i] = control;
   }
   /* Add the info field in the buffer. */
-  for(; i < (INFO_OFFSET+INFO_MAX_SIZE); i++) {
+  for(; i < (INFO_OFFSET+INFO_LEN); i++) {
     buffer[i] = *info;
     info++;
   }

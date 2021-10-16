@@ -7,6 +7,3 @@
 
 #include "AX25_RX.h"
 
-int main(){
-
-}

@@ -14,11 +14,11 @@
 int main()
 {
 	uint8 control=0xC0;
-	uint8 buffer[INFO_MAX_SIZE + PADDING_LEN + 19];
-	uint16 frameSize = INFO_MAX_SIZE + PADDING_LEN + 19;
-	uint8 info[INFO_MAX_SIZE];
+	uint8 buffer[INFO_LEN + PADDING_LEN + FRAME_SIZE_WITHOUT_INFO_AND_PADDING];
+	uint16 frameSize = INFO_LEN + PADDING_LEN + FRAME_SIZE_WITHOUT_INFO_AND_PADDING;
+	uint8 info[INFO_LEN];
 	uint8 infoData=0;
-	for(int i = 0; i<INFO_MAX_SIZE;i++){
+	for(int i = 0; i<INFO_LEN;i++){
 		info[i]=infoData++;
 	}
 	uint8 addr[ADDR_LEN] = { 'O', 'N', '4', 'U', 'L', 'G', 0x60, 'O', 'U',
