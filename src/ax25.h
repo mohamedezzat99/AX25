@@ -18,7 +18,7 @@
  ***********************************************/
 #define FLAG_LEN 1
 
-#define INFO_LEN        2		// Max number of bytes for Info field. (256 is the default value).
+#define INFO_LEN        20		// Max number of bytes for Info field. (256 is the default value).
 #define INFO_MAX_LEN 256
 #define AX25_FRAME_MAX_SIZE  276	// Max number of bytes for an I-frame. (1+14+1+1+256+2+1).
 
@@ -36,11 +36,14 @@
 
 #define FRAME_SIZE_WITHOUT_INFO_AND_PADDING 19
 
+#define READY 1
+#define NOT_READY 0
+
 
 
 /***********************************************
  *              Function Prototypes            *
  ***********************************************/
-void AX25_prepareIFrame(uint8 *, uint8 *, uint16 * , uint8 *, uint8, uint8 *);
+void AX25_buildFrame(uint8 *, uint8 *, uint16 * , uint8 *, uint8, uint8 *, uint8 *);
 
 #endif /* AX25_H_ */

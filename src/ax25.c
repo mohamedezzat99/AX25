@@ -13,7 +13,7 @@
 #include "ax25.h"
 #include "AX25_CRC.h"
 
-void AX25_prepareIFrame(uint8 *buffer, uint8 *info, uint16 * frameSize, uint8 * ADDR, uint8 control, uint8 * padding) {
+void AX25_buildFrame(uint8 *buffer, uint8 *info, uint16 * frameSize, uint8 * ADDR, uint8 control, uint8 * padding, uint8 * infoReadyFlag) {
 	uint16 i;
 
   /* Put flags at the right place in the buffer. */
@@ -42,6 +42,8 @@ void AX25_prepareIFrame(uint8 *buffer, uint8 *info, uint16 * frameSize, uint8 * 
   AX25_computeCRC(buffer, &i);
   buffer[i]=0x7E;
   *frameSize=i+1;
+  *infoReadyFlag=0;
+
 }
 
 #if 0
