@@ -46,6 +46,17 @@ void AX25_buildFrame(uint8 *buffer, uint8 *info, uint16 * frameSize, uint8 * ADD
 
 }
 
+/* remind Eng. Ahmed to make bit-stuffing mask */
+
+AX25_deFrame(uint8 * buffer, uint16 size){ /* note that array must be new */
+copy the above layer buffer to this buffer, with size;
+newbuffer[size];
+for(){
+	newbuffer[i] = buffer[i];
+}
+
+}
+
 #if 0
 void AX25_prepareIFrame(TX_FRAME *frame, uint8 control) {
 
