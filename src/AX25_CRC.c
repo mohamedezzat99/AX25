@@ -18,34 +18,49 @@
  * RETURN:
  * the CRC with a final XORed operation.
  *--------------------------------------------------------------------------*/
-void AX25_computeCRC(uint8 *buffer, uint16 * OpArrSize) {
+uint16 AX25_computeCRC(uint8 *buffer, uint16 * OpArrSize) {
 	unsigned int i, j;
 	unsigned short shiftRegister, outBit;
 	char byte;
 	uint16 crc;
-	// The last flag and the 2 bytes for FCS are removed.
-	// size_frame = size_frame - 3;
-
-	// Initialization of the Shift Register to 0xFFFF
+	/* Initialization of the Shift Register to 0xFFFF */
 	shiftRegister = 0xFFFF;
 
-	for(i=1 ; i<*OpArrSize; i++) {  // The first flag is not calculated so i=1.
+	for(i=1 ; i<*OpArrSize; i++) {  /* The first flag is not calculated so i=1. */
 		byte = buffer[i];
 
 		for(j=0; j<8; j++) {
 			outBit = shiftRegister & 0x0001;
-			shiftRegister >>= 0x01;  // Shift the register to the right.
+			shiftRegister >>= 0x01;  /* Shift the register to the right. */
 
 			if(outBit != (byte & 0x01)) {
-				shiftRegister ^= 0x8408;  // Mirrored polynom.
+				shiftRegister ^= 0x8408;  /* Mirrored polynom. */
 				byte >>= 0x01;
 				continue;
 			}
 			byte >>= 0x01;
 		}
 	}
-	crc = shiftRegister ^ 0xFFFF;  // Final XOR, FCS calculation.
-	// Put the FCS in the right place with the 15th bit to be sent first.
+	return shiftRegister ^ 0xFFFF;  /* Final XOR, FCS calculation. */
+}
+
+
+/*--------------------------------------------------------------------------*
+ * AX.25 FCS positioning.
+ * Put the FCS in the right place in the frame. The FCS is sent MSB first
+ * so we prepare the 15th bit of the CRC to be sent first.
+ *
+ * PARAMETERS:
+ * *buffer        pointer of the frame buffer.
+ * OpArrSize      it stores the index of the last inserted element in the array to keep track of size
+ *--------------------------------------------------------------------------*/
+void AX25_putCRC(uint8 *buffer, uint16 *OpArrSize) {
+  uint16 crc;
+
+  /* FCS calculation. */
+  crc = AX25_computeCRC(buffer, OpArrSize);
+
+  /* Put the FCS in the right place with the 15th bit to be sent first. */
 	buffer[*OpArrSize] = (crc & 0xff);
 	*OpArrSize=*OpArrSize+1;
 	buffer[*OpArrSize] = ((crc >> 8) & 0xff);

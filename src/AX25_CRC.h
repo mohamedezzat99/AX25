@@ -2,6 +2,7 @@
 #define AX25_CRC_H
 #include "std_types.h"
 
-void AX25_computeCRC(uint8 *buffer, uint16 * size_frame);
+uint16 AX25_computeCRC(uint8 *, uint16 *);
+void AX25_putCRC(uint8 *, uint16 *);
 
 #endif /* AX25_CRC_H */
