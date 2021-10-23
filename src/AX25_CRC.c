@@ -13,7 +13,7 @@
  *
  * PARAMETERS:
  * *buffer       pointer of the frame buffer.
- * *OpArrSize      it stores the index of the last inserted element in the array to keep track of size
+ * *OpArrSize    it stores the index of the last inserted element in the array to keep track of size
  *
  * RETURN:
  * the CRC with a final XORed operation.
@@ -51,7 +51,7 @@ uint16 computeCRC(uint8 *buffer, uint16 * OpArrSize) {
  *
  * PARAMETERS:
  * *buffer        pointer of the frame buffer.
- * *OpArrSize      it stores the index of the last inserted element in the array to keep track of size
+ * *OpArrSize     it stores the index of the last inserted element in the array to keep track of size
  *--------------------------------------------------------------------------*/
 void AX25_putCRC(uint8 *buffer, uint16 *OpArrSize) {
   uint16 crc;
