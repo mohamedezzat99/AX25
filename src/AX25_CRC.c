@@ -13,16 +13,15 @@
  *
  * PARAMETERS:
  * *buffer       pointer of the frame buffer.
- * size_frame    length of the frame (in bytes).
+ * *OpArrSize      it stores the index of the last inserted element in the array to keep track of size
  *
  * RETURN:
  * the CRC with a final XORed operation.
  *--------------------------------------------------------------------------*/
-uint16 AX25_computeCRC(uint8 *buffer, uint16 * OpArrSize) {
+uint16 computeCRC(uint8 *buffer, uint16 * OpArrSize) {
 	unsigned int i, j;
 	unsigned short shiftRegister, outBit;
 	char byte;
-	uint16 crc;
 	/* Initialization of the Shift Register to 0xFFFF */
 	shiftRegister = 0xFFFF;
 
@@ -52,13 +51,13 @@ uint16 AX25_computeCRC(uint8 *buffer, uint16 * OpArrSize) {
  *
  * PARAMETERS:
  * *buffer        pointer of the frame buffer.
- * OpArrSize      it stores the index of the last inserted element in the array to keep track of size
+ * *OpArrSize      it stores the index of the last inserted element in the array to keep track of size
  *--------------------------------------------------------------------------*/
 void AX25_putCRC(uint8 *buffer, uint16 *OpArrSize) {
   uint16 crc;
 
   /* FCS calculation. */
-  crc = AX25_computeCRC(buffer, OpArrSize);
+  crc = computeCRC(buffer, OpArrSize);
 
   /* Put the FCS in the right place with the 15th bit to be sent first. */
 	buffer[*OpArrSize] = (crc & 0xff);
