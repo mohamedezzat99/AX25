@@ -12,29 +12,29 @@
 #include "ax25.h"
 
 uint8 buffer[AX25_FRAME_MAX_SIZE];
+uint8 info[INFO_LEN];
 uint8 infoReadyFlag = NOT_READY;
 
-uint8 g_NR;
-uint8 g_NS;
+uint8 g_NR=0;
+uint8 g_NS=0;
 
 uint8 g_VR=0;
 uint8 g_VS=0;
 
-uint8 g_pollFinal;
-/*todo: ask how to pass a copy of the array
+uint8 g_pollFinal=0;
+
+/*TODO: ask how to pass a copy of the array
  * ask for next steps
  */
-//AX25_getInfo()
-//{
-//	infoReadyFlag=NOT_READY;
-//	/* currently write info this way*/
-//	uint8 infoData=0;
-//	for(int i = 0; i<INFO_LEN;i++){
-//		info[i]=infoData++;
-//	}
-//	infoReadyFlag=READY;
-//}
 
+
+/*
+ * Description: computes control bit given the following parameters
+ * parameters:
+ * frameType: give frame type (I, S, U)
+ * secondaryType: RR, RNR, REJ, SREJ, SABME, DISC, DM, UA , UI, TEST
+ *
+ */
 uint8 AX25_getControl(frameType frameType, frameSecondaryType secondaryType){
 	uint8 control=0;
 	switch(frameType){
@@ -58,7 +58,20 @@ uint8 AX25_getControl(frameType frameType, frameSecondaryType secondaryType){
 	}
 	return control;
 }
-
+/*
+ * Description: function fills in info array
+ * parameters:
+ *  *info: pointer to the global info array
+ */
+void AX25_getInfo(uint8 * info){
+	infoReadyFlag=NOT_READY;
+	uint8 infoData=0;
+	/*currently fill info this way */
+	for(int i = 0; i<INFO_LEN;i++){
+		info[i]=infoData++;
+	}
+	infoReadyFlag=READY;
+}
 int main()
 {
 
@@ -66,14 +79,13 @@ int main()
 			'F', 'T', 'I', '1', 0x61};
 
 	uint16 frameSize=0;
-	uint8 info[INFO_LEN];
 	uint8 control;
-	control = AX25_getControl(S,RR);
+	control = AX25_getControl(S,SREJ);
 	uint8 padding[PADDING_LEN]= {0xAA};
+	AX25_getInfo(info);
 	if(infoReadyFlag == READY){
 		AX25_buildFrame(buffer, info, &frameSize, addr, control, padding, &infoReadyFlag);
 	}
-	printf("\n info flag = %d \n", infoReadyFlag);
 	for (int i = 0; i < frameSize; ++i) {
 		printf("%x", buffer[i]);
 	}

@@ -13,36 +13,36 @@
 #include "ax25.h"
 #include "AX25_CRC.h"
 
-void AX25_buildFrame(uint8 *buffer, uint8 *info, uint16 * frameSize, uint8 * ADDR, uint8 control, uint8 * padding, uint8 * infoReadyFlag) {
+void AX25_buildFrame(uint8 *buffer, uint8 *info, uint16 *frameSize, uint8 *ADDR,
+		uint8 control, uint8 *padding, uint8 *infoReadyFlag) {
 	uint16 i;
 
-  /* Put flags at the right place in the buffer. */
-  buffer[0] = 0x7E;
+	/* Put flags at the right place in the buffer. */
+	buffer[0] = 0x7E;
 
-  /* Add the address in the buffer. */
-  for(i=1; i < ADDR_LEN + ADDR_OFFSET; i++) {
-    buffer[i] = ADDR[i-1];
-  }
-  /* Add the control byte */
-  for(;i<CNTRL_OFFSET+CNTRL_LEN;i++){
-	  buffer[i] = control;
-  }
-  /* Add the info field in the buffer. */
-  for(; i < (INFO_OFFSET+INFO_LEN); i++) {
-    buffer[i] = *info;
-    info++;
-  }
-  for(;i<PADDING_OFFSET+PADDING_LEN;i++){
-	  buffer[i] = *padding;
-	  padding++;
-  }
+	/* Add the address in the buffer. */
+	for (i = 1; i < ADDR_LEN + ADDR_OFFSET; i++) {
+		buffer[i] = ADDR[i - 1];
+	}
+	/* Add the control byte */
+	for (; i < CNTRL_OFFSET + CNTRL_LEN; i++) {
+		buffer[i] = control;
+	}
+	/* Add the info field in the buffer. */
+	for (; i < (INFO_OFFSET + INFO_LEN); i++) {
+		buffer[i] = *info;
+		info++;
+	}
+	for (; i < PADDING_OFFSET + PADDING_LEN; i++) {
+		buffer[i] = *padding;
+		padding++;
+	}
 
-
-  /* Calculation and insertion of the FCS in the buffer. */
-  AX25_putCRC(buffer, &i);
-  buffer[i]=0x7E;
-  *frameSize=i+1;
-  *infoReadyFlag=0;
+	/* Calculation and insertion of the FCS in the buffer. */
+	AX25_putCRC(buffer, &i);
+	buffer[i] = 0x7E;
+	*frameSize = i + 1;
+	*infoReadyFlag = 0;
 
 }
 
@@ -56,7 +56,36 @@ void AX25_buildFrame(uint8 *buffer, uint8 *info, uint16 * frameSize, uint8 * ADD
 //}
 //
 //}
+AX25_deFrame(uint8 *buffer, uint16 size) { /* note that array must be new */
+	//copy the above layer buffer to this buffer, with size;
+	uint16 newbuffer[size], recived_adrress[ADDR_LEN],
+	control_recived[CNTRL_LEN], info_reciver[INFO_MAX_LEN],
+	padding_recived[PADDING_LEN];
+	uint16 i;
+	for (i = 0; i < AX25_FRAME_MAX_SIZE; i++) {
+		newbuffer[i] = buffer[i];
+	}
 
+	if (newbuffer[0] == 0x7E) {
+		for (i = 1; i < ADDR_LEN + ADDR_OFFSET; i++) {
+			newbuffer[i] = recived_adrress[i];
+		}
+		for (; i < CNTRL_LEN + CNTRL_OFFSET; i++) {
+			newbuffer[i] = control_recived[i];
+		}
+
+		for (; i < INFO_MAX_LEN + INFO_OFFSET; i++) {
+			newbuffer[i] = info_reciver[i];
+
+		}
+		for (; i < PADDING_LEN + PADDING_OFFSET; i++) {
+			newbuffer[i] = padding_recived[i];
+		}
+		AX25_computeCRC(newbuffer, &i);
+
+	}
+
+}
 #if 0
 void AX25_prepareIFrame(TX_FRAME *frame, uint8 control) {
 
