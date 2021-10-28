@@ -13,7 +13,6 @@
 
 uint8 buffer[AX25_FRAME_MAX_SIZE];
 uint8 info[INFO_LEN];
-uint8 infoReadyFlag = NOT_READY;
 
 uint8 g_NR=0;
 uint8 g_NS=0;
@@ -64,30 +63,34 @@ uint8 AX25_getControl(frameType frameType, frameSecondaryType secondaryType){
  *  *info: pointer to the global info array
  */
 void AX25_getInfo(uint8 * info){
-	infoReadyFlag=NOT_READY;
 	uint8 infoData=0;
 	/*currently fill info this way */
 	for(int i = 0; i<INFO_LEN;i++){
 		info[i]=infoData++;
 	}
-	infoReadyFlag=READY;
 }
 int main()
 {
-
+//	setbuf(stdout,NULL);
+	uint8 infoReadyFlag = NOT_READY;
 	uint8 addr[ADDR_LEN] = { 'O', 'N', '4', 'U', 'L', 'G', 0x60, 'O', 'U',
 			'F', 'T', 'I', '1', 0x61};
-
 	uint16 frameSize=0;
 	uint8 control;
 	control = AX25_getControl(S,SREJ);
 	uint8 padding[PADDING_LEN]= {0xAA};
+	if(infoReadyFlag == NOT_READY){
 	AX25_getInfo(info);
-	if(infoReadyFlag == READY){
-		AX25_buildFrame(buffer, info, &frameSize, addr, control, padding, &infoReadyFlag);
+	infoReadyFlag=READY;
 	}
+	if(infoReadyFlag == READY){
+		AX25_buildFrame(buffer, info, &frameSize, addr, control, padding);
+		infoReadyFlag=NOT_READY;
+	}
+
 	for (int i = 0; i < frameSize; ++i) {
 		printf("%x", buffer[i]);
 	}
-	printf("\n frame size in bytes is: %d" ,frameSize);
+	printf("\n frame size in bytes is: %d\n" ,frameSize);
+	AX25_deFrame(buffer, frameSize);
 }

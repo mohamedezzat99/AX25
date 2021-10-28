@@ -1,7 +1,7 @@
 /*
  ============================================================================
  Name        : AX25.c
- Author      : Mohamed Ezzat
+ Author      : Mohamed, 7ares, Nasser.
  Version     :
  Copyright   : Your copyright notice
  Description : Form AX25 frame structure
@@ -14,7 +14,7 @@
 #include "AX25_CRC.h"
 
 void AX25_buildFrame(uint8 *buffer, uint8 *info, uint16 *frameSize, uint8 *ADDR,
-		uint8 control, uint8 *padding, uint8 *infoReadyFlag) {
+		uint8 control, uint8 *padding) {
 	uint16 i;
 
 	/* Put flags at the right place in the buffer. */
@@ -42,11 +42,9 @@ void AX25_buildFrame(uint8 *buffer, uint8 *info, uint16 *frameSize, uint8 *ADDR,
 	AX25_putCRC(buffer, &i);
 	buffer[i] = 0x7E;
 	*frameSize = i + 1;
-	*infoReadyFlag = 0;
-
 }
 
-/* remind Eng. Ahmed to make bit-stuffing mask */
+/* TODO:remind Eng. Ahmed to make bit-stuffing mask */
 
 //AX25_deFrame(uint8 * buffer, uint16 size){ /* note that array must be new */
 //copy the above layer buffer to this buffer, with size;
@@ -56,36 +54,80 @@ void AX25_buildFrame(uint8 *buffer, uint8 *info, uint16 *frameSize, uint8 *ADDR,
 //}
 //
 //}
-AX25_deFrame(uint8 *buffer, uint16 size) { /* note that array must be new */
-	//copy the above layer buffer to this buffer, with size;
-	uint16 newbuffer[size], recived_adrress[ADDR_LEN],
-	control_recived[CNTRL_LEN], info_reciver[INFO_MAX_LEN],
-	padding_recived[PADDING_LEN];
-	uint16 i;
-	for (i = 0; i < AX25_FRAME_MAX_SIZE; i++) {
+void AX25_deFrame(uint8 *buffer, uint16 size) {
+	uint8 newbuffer[size], recived_adrress[ADDR_LEN],
+			control_recived[CNTRL_LEN], info_reciver[INFO_MAX_LEN],
+			padding_recived[PADDING_LEN];
+	uint16 crc;
+	uint16 j;
+	uint8 *ptrz;
+	ptrz = (uint8*) &crc;
+	uint16 i = 0;
+	for (; i < AX25_FRAME_MAX_SIZE; i++) {
 		newbuffer[i] = buffer[i];
 	}
 
 	if (newbuffer[0] == 0x7E) {
-		for (i = 1; i < ADDR_LEN + ADDR_OFFSET; i++) {
-			newbuffer[i] = recived_adrress[i];
+		for (i = 1, j = 0; i < ADDR_LEN + ADDR_OFFSET; i++, j++) {
+			recived_adrress[j] = newbuffer[i];
 		}
-		for (; i < CNTRL_LEN + CNTRL_OFFSET; i++) {
-			newbuffer[i] = control_recived[i];
+		for (j = 0; i < CNTRL_LEN + CNTRL_OFFSET; i++, j++) {
+			control_recived[j] = newbuffer[i];
 		}
 
-		for (; i < INFO_MAX_LEN + INFO_OFFSET; i++) {
-			newbuffer[i] = info_reciver[i];
-
+		for (j = 0; i < INFO_MAX_LEN + INFO_OFFSET; i++, j++) {
+			info_reciver[j] = newbuffer[i];
 		}
-		for (; i < PADDING_LEN + PADDING_OFFSET; i++) {
-			newbuffer[i] = padding_recived[i];
+		for (j = 0; i < PADDING_LEN + PADDING_OFFSET; i++, j++) {
+			padding_recived[j] = newbuffer[i];
 		}
-		AX25_computeCRC(newbuffer, &i);
 
+		crc = computeCRC(newbuffer, &i);
+		if (*ptrz == newbuffer[i]) {
+			i++;
+			ptrz++;
+			if (*ptrz == newbuffer[i]) {
+				i++;
+				printf("**received frame**\n");
+				if (newbuffer[i] == 0x7E) {
+					printf("flag=: %x", newbuffer[i]);
+					printf("\naddress:\n");
+					for (i = 0; i < ADDR_LEN; i++) {
+						//printf("address[%d]=%x\t", i, recived_adrress[i]);
+
+						printf("%x", recived_adrress[i]);
+					}
+					printf("\ncontrol byte\n");
+					for (i = 0; i < CNTRL_LEN; i++) {
+						printf("control[%d]=%x\t", i, control_recived[i]);
+					}
+					printf("\nreceived information\n");
+					printf("\ninfo\n");
+					for (i = 0; i < INFO_MAX_LEN; i++) {
+						//	printf("info[%d]=%x\t", i, info_reciver[i]);
+						printf("%x", info_reciver[i]);
+					}
+					printf("\nvariable padding\n");
+					printf("\npadding\n");
+					for (i = 0; i < PADDING_LEN; i++) {
+						//printf("padding[%d]=%x\t",i,padding_recived[i]);
+
+						printf("%x", padding_recived[i]);
+					}
+					printf("\nFCS\n");
+//					ptrz--;
+//					printf("FCS[0]=%x\t", *ptrz);
+//					ptrz++;
+//					printf("FCS[1]=%x\t", *ptrz);
+					printf("\nCRC = %x\n", crc);
+					printf("\nflag = %x", newbuffer[++i]); /*TODO: fix here cause it prints bytes in reverse order*/
+
+				}
+			}
+		}
 	}
-
 }
+
 #if 0
 void AX25_prepareIFrame(TX_FRAME *frame, uint8 control) {
 
