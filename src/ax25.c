@@ -83,9 +83,11 @@ void AX25_deFrame(uint8 *buffer, uint16 size) {
 		}
 
 		crc = computeCRC(newbuffer, &i);
+		ptrz++;
 		if (*ptrz == newbuffer[i]) {
+			printf("Hi");
 			i++;
-			ptrz++;
+			ptrz--;
 			if (*ptrz == newbuffer[i]) {
 				i++;
 				printf("**received frame**\n");
@@ -120,7 +122,7 @@ void AX25_deFrame(uint8 *buffer, uint16 size) {
 //					ptrz++;
 //					printf("FCS[1]=%x\t", *ptrz);
 					printf("\nCRC = %x\n", crc);
-					printf("\nflag = %x", newbuffer[++i]); /*TODO: fix here cause it prints bytes in reverse order*/
+					printf("\nflag = %x", newbuffer[++i]);
 
 				}
 			}

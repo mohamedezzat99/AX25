@@ -60,9 +60,9 @@ void AX25_putCRC(uint8 *buffer, uint16 *OpArrSize) {
   crc = computeCRC(buffer, OpArrSize);
 
   /* Put the FCS in the right place with the 15th bit to be sent first. */
-	buffer[*OpArrSize] = (crc & 0xff);
-	*OpArrSize=*OpArrSize+1;
 	buffer[*OpArrSize] = ((crc >> 8) & 0xff);
+	*OpArrSize=*OpArrSize+1;
+	buffer[*OpArrSize] = (crc & 0xff);
 	*OpArrSize=*OpArrSize+1;
 }
 
