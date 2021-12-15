@@ -5,7 +5,6 @@
  *      Author: Mohamed Ezzat
  */
 
-
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -13,84 +12,66 @@
 
 uint8 buffer[AX25_FRAME_MAX_SIZE];
 uint8 info[INFO_LEN];
-
-uint8 g_NR=0;
-uint8 g_NS=0;
-
-uint8 g_VR=0;
-uint8 g_VS=0;
-
-uint8 g_pollFinal=0;
-
-/*TODO: ask how to pass a copy of the array
- * ask for next steps
- */
+uint8 addr[ADDR_LEN] = { 'O', 'N', '4', 'U', 'L', 'G', 0x60, 'O', 'U', 'F',
+		'T', 'I', '1', 0x61 };
 
 
-/*
- * Description: computes control bit given the following parameters
- * parameters:
- * frameType: give frame type (I, S, U)
- * secondaryType: RR, RNR, REJ, SREJ, SABME, DISC, DM, UA , UI, TEST
- *
- */
-uint8 AX25_getControl(frameType frameType, frameSecondaryType secondaryType){
-	uint8 control=0;
-	switch(frameType){
-	case I:
-		control = (control & 0x1F) | ((g_NR << 5) & 0xE0); 			/* insert N(R) into control field */
-		control = (control & 0xF1) | ((g_NS << 1) & 0x0E); 			/* insert N(S) into control field */
-		control = (control & 0xEF) | ((g_pollFinal<<4) & 0x10); 	/* insert P into control field */
-		control &= ~(1 << 0); 										/* insert 0 in rightmost bit */
-		break;
-	case S:
-		control = (control & 0x1F) | ((g_NR << 5) & 0xE0); 			/* insert N(R) into control field */
-		control = (control & 0xEF) | ((g_pollFinal<<4) & 0x10); 	/* insert P/F into control field */
-		control = (control & 0xFC) | 0x01;							/* insert 01 in the two rightmost bits */
-		control = (control & 0xF3) | ((secondaryType << 2) & 0x0C);	/* insert S bits into their place */
-		break;
-	case U:
-		control = (control & 0xEF) | ((g_pollFinal<<4) & 0x10); 	/* insert P/F into control field */
-		control = (control & 0xFC) | 0x03;							/* insert 11 in the two rightmost bits */
-		control = (control & 0x13) | (secondaryType & 0xEC);		/* insert M bits into their proper location */
-		break;
-	}
-	return control;
-}
-/*
- * Description: function fills in info array
- * parameters:
- *  *info: pointer to the global info array
- */
-void AX25_getInfo(uint8 * info){
-	uint8 infoData=0;
-	/*currently fill info this way */
-	for(int i = 0; i<INFO_LEN;i++){
-		info[i]=infoData++;
-	}
-}
-int main()
-{
-//	setbuf(stdout,NULL);
-	uint8 infoReadyFlag = NOT_READY;
-	uint8 addr[ADDR_LEN] = { 'O', 'N', '4', 'U', 'L', 'G', 0x60, 'O', 'U',
-			'F', 'T', 'I', '1', 0x61};
-	uint16 frameSize=0;
+
+uint8 flag_SSP_to_Control = EMPTY;
+uint8 flag_Control_to_Framing = EMPTY;
+uint8 flag_Control_to_SSP = EMPTY;
+uint8 flag_Deframing_to_Control = EMPTY;
+
+
+extern uint8 flag_TX;
+extern uint8 flag_RX;
+extern uint8 flag_busy;
+
+
+int main() {
+	uint8 AddressReadyFlag = EMPTY;
+	uint8 ControlReadyFlag = EMPTY;
+	uint8 infoReadyFlag = EMPTY;
+	uint8 FCSReadyFlag = EMPTY;
+
+
 	uint8 control;
-	control = AX25_getControl(S,SREJ);
-	uint8 padding[PADDING_LEN]= {0xAA};
-	if(infoReadyFlag == NOT_READY){
-	AX25_getInfo(info);
-	infoReadyFlag=READY;
+	//	uint8 addr[ADDR_LEN] = { "ON4ULG", 0x60, 'O', 'U', 'F', 'T', 'I', '1', 0x61};
+
+	uint16 frameSize = 0;
+
+	//	uint8 NR=0;
+	uint8 infoSize = sizeof(info) / sizeof(info[0]);
+
+	if (infoReadyFlag == EMPTY) {
+		AX25_getInfo(info);
+		infoReadyFlag = FULL;
 	}
-	if(infoReadyFlag == READY){
-		AX25_buildFrame(buffer, info, &frameSize, addr, control, padding);
-		infoReadyFlag=NOT_READY;
+
+	if ((flag_SSP_to_Control == FULL && flag_Control_to_Framing == EMPTY) || (flag_Control_to_SSP == EMPTY && flag_Deframing_to_Control == FULL) ) {
+		 AX25_Manager(&control); /* TX call */
+		 // check for ack first
+		 //		flag_SSP_to_Control = EMPTY;
+		 //		flag_Control_to_Framing = FULL;
+
+
+//		flag_Control_to_SSP = FULL;
+//		flag_Deframing_to_Control = EMPTY;
+	}
+
+	if (flag_TX == SET && flag_Control_to_Framing == FULL) {
+		AX25_buildFrame(buffer, info, &frameSize, addr, control, infoSize);
+		flag_TX = CLEAR;
+		infoReadyFlag = EMPTY;
 	}
 
 	for (int i = 0; i < frameSize; ++i) {
 		printf("%x", buffer[i]);
 	}
-	printf("\n frame size in bytes is: %d\n" ,frameSize);
-	AX25_deFrame(buffer, frameSize);
+	printf("\n frame size in bytes is: %d\n", frameSize);
+
+	if (flag_RX == SET && flag_Deframing_to_Control == EMPTY) {
+		AX25_deFrame(buffer, frameSize, infoSize);
+		flag_RX = CLEAR;
+	}
 }
