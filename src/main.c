@@ -22,6 +22,8 @@ uint8 flag_Control_to_Framing = EMPTY;
 uint8 flag_Control_to_SSP = EMPTY;
 uint8 flag_Deframing_to_Control = EMPTY;
 
+uint8 g_infoSize;
+
 
 extern uint8 flag_TX;
 extern uint8 flag_RX;
@@ -41,7 +43,6 @@ int main() {
 	uint16 frameSize = 0;
 
 	//	uint8 NR=0;
-	uint8 infoSize = sizeof(info) / sizeof(info[0]);
 
 	if (infoReadyFlag == EMPTY) {
 		AX25_getInfo(info);
@@ -59,8 +60,8 @@ int main() {
 //		flag_Deframing_to_Control = EMPTY;
 	}
 
-	if (flag_TX == SET && flag_Control_to_Framing == FULL) {
-		AX25_buildFrame(buffer, info, &frameSize, addr, control, infoSize);
+	if (flag_Control_to_Framing == FULL) {
+		AX25_buildFrame(buffer, info, &frameSize, addr, control, g_infoSize);
 		flag_TX = CLEAR;
 		infoReadyFlag = EMPTY;
 	}
@@ -70,8 +71,8 @@ int main() {
 	}
 	printf("\n frame size in bytes is: %d\n", frameSize);
 
-	if (flag_RX == SET && flag_Deframing_to_Control == EMPTY) {
-		AX25_deFrame(buffer, frameSize, infoSize);
+	if (flag_Deframing_to_Control == EMPTY) {
+		AX25_deFrame(buffer, frameSize, g_infoSize);
 		flag_RX = CLEAR;
 	}
 }

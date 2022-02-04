@@ -16,3 +16,5 @@ AX25 Protocol
 - receiver takes frame and splits it into all the sub-fields.
 
 ## questions
+how to implement N(S) and N(R) in the latest Manager Function
+ask for next steps

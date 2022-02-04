@@ -62,6 +62,10 @@ typedef enum{
 	idle, TX, RX, start_TX, start_RX
 }controlLayerMode;
 
+typedef enum{
+	REJECT, ACCEPT
+}Status;
+
 
 //extern uint8 flag_SSP_to_Control=EMPTY;
 //extern uint8 flag_Control_to_Framing=EMPTY;
@@ -73,9 +77,9 @@ typedef enum{
  *              Function Prototypes            *
  ***********************************************/
 void AX25_buildFrame(uint8 *, uint8 *, uint16 * , uint8 *, uint8, uint8);
-void AX25_deFrame(uint8*, uint16, uint8);
+uint8 AX25_deFrame(uint8*, uint16, uint8);
 uint8 AX25_getControl(frameType frameType, frameSecondaryType secondaryType, uint8 NS, uint8 NR, uint8 pollFinal);
-uint8 AX25_Manager();
+void AX25_Manager(uint8 *);
 void AX25_getInfo(uint8 * info);
 
 #endif /* AX25_H_ */
