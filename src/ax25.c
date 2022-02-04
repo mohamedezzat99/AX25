@@ -219,6 +219,7 @@ void AX25_Manager(uint8* a_control){
 
 
 		/* Generate Required Control Byte */
+
 		/* check on CRC flag in deframe if True make RR if False make REJ */
 
 		if(flag_RX_crc == SET){
