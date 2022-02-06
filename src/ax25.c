@@ -14,7 +14,7 @@
 #include "AX25_CRC.h"
 
 uint8 g_pollFinal=0;
-uint8 g_NR=0;
+uint8 g_Received_NR=0;
 
 
 uint8 g_recived_adrress[ADDR_LEN], g_control_recived[CNTRL_LEN], g_info_reciver[INFO_MAX_LEN], g_padding_recived[PADDING_LEN];
@@ -83,6 +83,20 @@ void AX25_getInfo(uint8 * info){
 }
 
 /*
+ * TESTING function
+ * Description: function fills in info array
+ * parameters:
+ *  *info: pointer to the global info array
+ */
+void fillBuffer(uint8 *buffer, uint8 size){
+	uint8 Data=0;
+	/*currently fill buffers this way */
+	for(int i = 0; i<size;i++){
+		buffer[i]=Data++;
+	}
+}
+
+/*
  * Description: this function acts as Control Layer
  * parameters:
  *
@@ -100,31 +114,49 @@ void AX25_Manager(uint8* a_control){
 	static uint8 state = idle;
 	uint8 pollfinal=0;
 	static uint8 VS=0;
+	static uint8 VR=0;
 	uint8 NS;
+	uint8 NR;
+	uint8 Received_NS;
 	uint8 PollFinal;
+	uint8 Received_PollFinal;
 	uint8 Sbits;
+	uint8 Received_Sbits;
 	uint8 Mbits;
-	uint8 recieved_control;
+	uint8 Received_Mbits;
+	uint8 received_control;
 	uint8 Address_Copy[ADDR_LEN];
 	uint8 myAddress[ADDR_LEN] = { 'O', 'N', '4', 'U', 'L', 'G', 0x60, 'O', 'U', 'F',
 			'T', 'I', '1', 0x61 };
 	uint8 notMyAddress = CLEAR;
 	uint8 Control_To_SSP[236];
 	uint8 flag_Status = ACCEPT;
-	uint8 g_NR_1;
+	uint8 g_Recieved_NR_1;
 
 
 
 	/*---------------------------------------- 3rd trial ----------------------------------------*/
 
+	/* TESTING code */
+
+	fillBuffer(SSP_to_Control_Buffer, SIZE_SSP_to_Control_Buffer); /* fills buffer of SSP_TO_CONTROL */
+
+	/* ----------END OF TESTING------------------- */
+
 	switch(state){
 	case idle:
 		if((flag_SSP_to_Control == FULL && flag_Control_to_Framing == EMPTY)){
 			for (i = 0; i < SIZE_SSP_to_Control_Buffer; i++) {
-				info[i]=SSP_to_Control_Buffer[i];
+				info[i] = SSP_to_Control_Buffer[i];
 			}
 			flag_SSP_to_Control = EMPTY;
-			*a_control = AX25_getControl(S, RR, NS, g_NR, pollfinal);
+
+			/*TODO: check from DR. if this part is correct or not */
+			NS=VS;
+			NR=VR;
+			/*--------------------end of check part--------------------*/
+
+			*a_control = AX25_getControl(S, RR, NS, NR, pollfinal);
 			flag_TX = SET;
 			state = TX;
 		}
@@ -138,7 +170,7 @@ void AX25_Manager(uint8* a_control){
 				if(addr[i] != myAddress[i])
 				{
 					notMyAddress = SET;
-					flag_Deframing_to_Control = EMPTY;
+				//	flag_Deframing_to_Control = EMPTY;
 					break;
 				}
 			}
@@ -150,10 +182,8 @@ void AX25_Manager(uint8* a_control){
 					Control_To_SSP[i] = g_info_reciver[INFO_LEN];
 				}
 						flag_Deframing_to_Control = EMPTY;
-
 				state = RX;
 			}
-
 		}
 		break;
 
@@ -161,40 +191,42 @@ void AX25_Manager(uint8* a_control){
 
 		if(flag_Deframing_to_Control == FULL){
 
-			recieved_control = g_control_recived[0];
+			received_control = g_control_recived[0];
 
 			/* check which type I or S or U */
-			if((recieved_control && 0x01) == 0){
+			if((received_control && 0x01) == 0){
 
 				/* type is I frame */
-				g_NR = (recieved_control & 0xE0)>> 5;
-				NS = (recieved_control & 0x0E) >> 1;
-				PollFinal = (recieved_control & 0x10) >> 4; /* TODO: check if it should be Poll or PollFinal */
+				g_Received_NR = (received_control & 0xE0)>> 5;
+				Received_NS = (received_control & 0x0E) >> 1;
+				Received_PollFinal = (received_control & 0x10) >> 4; /* TODO: check if it should be Poll or PollFinal */
 			}
-			else if((recieved_control && 0x03) == 1){
+			else if((received_control && 0x03) == 1){
 
 				/* type is S frame */
 
-				g_NR = (recieved_control & 0xE0)>> 5;
-				PollFinal = (recieved_control & 0x10) >> 4;
-				Sbits = (recieved_control & 0x0C) >> 2;
+				g_Received_NR = (received_control & 0xE0)>> 5;
+				Received_PollFinal = (received_control & 0x10) >> 4;
+				Received_Sbits = (received_control & 0x0C) >> 2;
 
-
-				g_NR_1 = g_NR -1;
-				if(g_NR_1 > 7){
-					g_NR_1 = 7;
+				/* in case the received NR is 0 this means that we ack frames up to 7 from previous window */
+				g_Recieved_NR_1 = g_Received_NR -1;
+				if(g_Recieved_NR_1 > 7){
+					g_Recieved_NR_1 = 7;
 				}
 
 
-				if((g_NR_1) == VS && (Sbits == RR || Sbits == RNR)){
-					flag_Status = ACCEPT;
+				if((g_Recieved_NR_1) == VS && (Received_Sbits == RR || Received_Sbits == RNR)){ /* check if frame was received properly or not by other side */
 
-					if(VS<7){
+					flag_Status = ACCEPT; /* this means that the frame sent was accepted */
+
+					/* make values of VS range from 0 --> 7 only */
+					if (VS < 7) {
 						VS++;
+					} else {
+						VS = 0;
 					}
-					else{
-						VS=0;
-					}
+
 					state = idle;
 				}
 				else{
@@ -205,8 +237,8 @@ void AX25_Manager(uint8* a_control){
 			else{
 
 				/* type is U frame */
-				Mbits = (recieved_control & 0xEC)>> 2;
-				PollFinal = (recieved_control & 0x10) >> 4;
+				Received_Mbits = (received_control & 0xEC)>> 2;
+				Received_PollFinal = (received_control & 0x10) >> 4;
 			}
 		}
 		state = idle;
@@ -220,18 +252,16 @@ void AX25_Manager(uint8* a_control){
 
 		/* Generate Required Control Byte */
 
-		/* check on CRC flag in deframe if True make RR if False make REJ */
+		/* check on CRC flag (in deframe function) if True make RR if False make REJ */
 
 		if(flag_RX_crc == SET){
-
-			*a_control = AX25_getControl(S, RR, NS, g_NR, pollfinal);
-
+			*a_control = AX25_getControl(S, RR, NS, g_Received_NR, pollfinal);
 		} else{
 
-			*a_control = AX25_getControl(S, REJ, NS, g_NR, pollfinal);
-
+			*a_control = AX25_getControl(S, REJ, NS, g_Received_NR, pollfinal);
 		}
 
+		/*TODO: check if this part should be here or before the if condition above */
 		NS = VS;
 		if(VS<7){
 			VS++;
@@ -239,13 +269,13 @@ void AX25_Manager(uint8* a_control){
 		else{
 			VS=0;
 		}
-		g_infoSize = 0;
+		/*------------------------------------------*/
+
+		g_infoSize = 0; /* set info field size to 0 in S frame */
 
 		/* Fill address array */
-		for(i=0; i<ADDR_LEN;i++){
-
+		for (i = 0; i < ADDR_LEN; i++) {
 			addr[i] = myAddress[i];
-
 		}
 
 
@@ -272,7 +302,7 @@ void AX25_Manager(uint8* a_control){
 			SSP_to_Control_Buffer_Copy[i]=SSP_to_Control_Buffer[i];
 		}
 
-		*a_control = AX25_getControl(S, RR, NS, g_NR, pollfinal);
+		*a_control = AX25_getControl(S, RR, NS, g_Received_NR, pollfinal);
 
 		flag_SSP_to_Control = CLEAR;
 
@@ -314,7 +344,7 @@ void AX25_Manager(uint8* a_control){
 
 		prev_state = idle;
 
-		*a_control = AX25_getControl(S, RR, NS, g_NR, pollfinal); /* TODO: make S and RR variables */
+		*a_control = AX25_getControl(S, RR, NS, g_Received_NR, pollfinal); /* TODO: make S and RR variables */
 
 		/* call function? AX25_buildFrame(buffer, info, frameSize, ADDR, control, infoSize); */
 
@@ -336,7 +366,7 @@ void AX25_Manager(uint8* a_control){
 			VS=0;
 		}
 
-		*a_control = AX25_getControl(S, RR, NS, g_NR, pollfinal);
+		*a_control = AX25_getControl(S, RR, NS, g_Received_NR, pollfinal);
 	}
 
 	/* --------------------------- End of TX part ---------------------------*/
@@ -351,7 +381,7 @@ void AX25_Manager(uint8* a_control){
 
 		/* type is I frame */
 
-		g_NR = (control & 0xE0) >> 5;
+		g_Received_NR = (control & 0xE0) >> 5;
 		NS = (control & 0x0E) >> 1;
 		PollFinal = (control & 0x10) >> 4; /* TODO: check if it should be Poll or PollFinal */
 
@@ -361,7 +391,7 @@ void AX25_Manager(uint8* a_control){
 
 		/* type is S frame */
 
-		g_NR = (control & 0xE0) >> 5;
+		g_Received_NR = (control & 0xE0) >> 5;
 		PollFinal = (control & 0x10) >> 4;
 		Sbits = (control & 0x0C) >> 2;
 
@@ -503,7 +533,7 @@ uint8 AX25_deFrame(uint8 *buffer, uint16 frameSize, uint8 infoSize) {
 			if((control && 0x01) == 0){
 
 				/* type is I frame */
-				g_NR = (control & 0xE0)>> 5;
+				g_Received_NR = (control & 0xE0)>> 5;
 
 				NS = (control & 0x0E) >> 1;
 
@@ -511,7 +541,7 @@ uint8 AX25_deFrame(uint8 *buffer, uint16 frameSize, uint8 infoSize) {
 			}
 			else if((control && 0x03) == 1){
 				/* type is S frame */
-				g_NR = (control & 0xE0)>> 5;
+				g_Received_NR = (control & 0xE0)>> 5;
 				PollFinal = (control & 0x10) >> 4;
 				Sbits = (control & 0x0C) >> 2;
 			}
