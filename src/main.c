@@ -11,7 +11,7 @@
 #include "ax25.h"
 
 uint8 buffer[AX25_FRAME_MAX_SIZE];
-uint8 info[INFO_LEN];
+uint8 info[SSP_FRAME_MAX_SIZE];
 uint8 addr[ADDR_LEN] = { 'O', 'N', '4', 'U', 'L', 'G', 0x60, 'O', 'U', 'F',
 		'T', 'I', '1', 0x61 };
 
@@ -22,7 +22,7 @@ uint8 flag_Control_to_Framing = EMPTY;
 uint8 flag_Control_to_SSP = EMPTY;
 uint8 flag_Deframing_to_Control = EMPTY;
 
-uint8 g_infoSize;
+uint8 g_infoSize = 236; //temp set as 236
 
 
 extern uint8 flag_TX;
@@ -33,7 +33,7 @@ extern uint8 flag_busy;
 int main() {
 	uint8 AddressReadyFlag = EMPTY;
 	uint8 ControlReadyFlag = EMPTY;
-	uint8 infoReadyFlag = EMPTY;
+//	uint8 infoReadyFlag = EMPTY;
 	uint8 FCSReadyFlag = EMPTY;
 
 
@@ -43,17 +43,17 @@ int main() {
 	uint16 frameSize = 0;
 
 	//	uint8 NR=0;
-
-	if (infoReadyFlag == EMPTY) {
-		AX25_getInfo(info);
-		infoReadyFlag = FULL;
+while(1){
+	if (flag_SSP_to_Control == EMPTY) {
+		 AX25_getInfo(info);
+		 flag_SSP_to_Control = FULL;
 	}
 
 	if ((flag_SSP_to_Control == FULL && flag_Control_to_Framing == EMPTY) || (flag_Control_to_SSP == EMPTY && flag_Deframing_to_Control == FULL) ) {
-		 AX25_Manager(&control); /* TX call */
+		 AX25_Manager(&control);
 		 // check for ack first
 		 //		flag_SSP_to_Control = EMPTY;
-		 //		flag_Control_to_Framing = FULL;
+		flag_Control_to_Framing = FULL; //TESTING
 
 
 //		flag_Control_to_SSP = FULL;
@@ -63,7 +63,8 @@ int main() {
 	if (flag_Control_to_Framing == FULL) {
 		AX25_buildFrame(buffer, info, &frameSize, addr, control, g_infoSize);
 		flag_TX = CLEAR;
-		infoReadyFlag = EMPTY;
+		flag_SSP_to_Control = EMPTY;
+		flag_Control_to_Framing = EMPTY; // TESTING
 	}
 
 	for (int i = 0; i < frameSize; ++i) {
@@ -75,4 +76,5 @@ int main() {
 		AX25_deFrame(buffer, frameSize, g_infoSize);
 		flag_RX = CLEAR;
 	}
+}
 }

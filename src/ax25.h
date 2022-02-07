@@ -27,11 +27,11 @@
 #define CNTRL_LEN 1
 
 #define INFO_OFFSET CNTRL_LEN+CNTRL_OFFSET
-#define INFO_LEN        236			// Max number of bytes for Info field. (256 is the default value).
-#define INFO_MAX_LEN 	237
+#define SSP_FRAME_MAX_SIZE        236			// Max number of bytes for Info field. (256 is the default value).
+#define INFO_MAX_LEN 	SSP_FRAME_MAX_SIZE+1    // Even in the case of max SSP frame size there will be a byte of padding
 
 #define PADDING_LEN 5
-#define PADDING_OFFSET INFO_LEN + ADDR_LEN + FLAG_LEN + CNTRL_LEN
+#define PADDING_OFFSET SSP_FRAME_MAX_SIZE + ADDR_LEN + FLAG_LEN + CNTRL_LEN
 
 #define FCS_OFFSET 253
 

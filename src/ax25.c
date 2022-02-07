@@ -17,7 +17,7 @@ uint8 g_pollFinal=0;
 uint8 g_Received_NR=0;
 
 
-uint8 g_recived_adrress[ADDR_LEN], g_control_recived[CNTRL_LEN], g_info_reciver[INFO_MAX_LEN], g_padding_recived[PADDING_LEN];
+uint8 g_recived_adrress[ADDR_LEN], g_control_recived[CNTRL_LEN], g_info_reciver[SSP_FRAME_MAX_SIZE], g_padding_recived[PADDING_LEN];
 
 extern 	uint8 addr[ADDR_LEN];
 
@@ -31,7 +31,7 @@ extern uint8 flag_SSP_to_Control;
 extern uint8 flag_Control_to_Framing;
 extern uint8 flag_Control_to_SSP;
 extern uint8 flag_Deframing_to_Control;
-extern uint8 info[INFO_LEN];
+extern uint8 info[SSP_FRAME_MAX_SIZE];
 
 extern 	uint8 g_infoSize;
 
@@ -113,7 +113,7 @@ void AX25_Manager(uint8* a_control){
 	uint8 Deframing_To_Control_Buffer_Copy[256];
 	static uint8 state = idle;
 	uint8 pollfinal=0;
-	static uint8 VS=0;
+	static uint8 VS=7;
 	static uint8 VR=0;
 	uint8 NS;
 	uint8 NR;
@@ -136,15 +136,14 @@ void AX25_Manager(uint8* a_control){
 
 
 	/*---------------------------------------- 3rd trial ----------------------------------------*/
-
 	/* TESTING code */
 
 	fillBuffer(SSP_to_Control_Buffer, SIZE_SSP_to_Control_Buffer); /* fills buffer of SSP_TO_CONTROL */
 
 	/* ----------END OF TESTING------------------- */
-
 	switch(state){
 	case idle:
+		/*----------------------- TX part -----------------------*/
 		if((flag_SSP_to_Control == FULL && flag_Control_to_Framing == EMPTY)){
 			for (i = 0; i < SIZE_SSP_to_Control_Buffer; i++) {
 				info[i] = SSP_to_Control_Buffer[i];
@@ -161,6 +160,8 @@ void AX25_Manager(uint8* a_control){
 			state = TX;
 		}
 
+		/*----------------------- RX part -----------------------*/
+
 		if((flag_Control_to_SSP == EMPTY && flag_Deframing_to_Control == FULL)){
 
 			/* nmla el fo2o b3adha n3ml flag clear */
@@ -170,18 +171,19 @@ void AX25_Manager(uint8* a_control){
 				if(addr[i] != myAddress[i])
 				{
 					notMyAddress = SET;
-				//	flag_Deframing_to_Control = EMPTY;
+					flag_Deframing_to_Control = EMPTY; /* clears Buffer in case address is not ours */
 					break;
 				}
 			}
 
-			if(notMyAddress != SET){
+			if (notMyAddress != SET) {
 
 				/* copy array to upper layer */
-				for(i=0; i< INFO_LEN; i++){
-					Control_To_SSP[i] = g_info_reciver[INFO_LEN];
+				for (i = 0; i < SSP_FRAME_MAX_SIZE; i++) {
+					Control_To_SSP[i] = g_info_reciver[i];
 				}
-						flag_Deframing_to_Control = EMPTY;
+
+				flag_Deframing_to_Control = EMPTY; /* clears Buffer after copying data in it */
 				state = RX;
 			}
 		}
@@ -250,7 +252,17 @@ void AX25_Manager(uint8* a_control){
 //		flag_RX = SET;
 
 
+
 		/* Generate Required Control Byte */
+
+		/*TODO: check if this part should be here or after the if condition above */
+		NS = VS;
+		if(VS<7){
+			VS++;
+		}
+		else{
+			VS=0;
+		}
 
 		/* check on CRC flag (in deframe function) if True make RR if False make REJ */
 
@@ -261,14 +273,7 @@ void AX25_Manager(uint8* a_control){
 			*a_control = AX25_getControl(S, REJ, NS, g_Received_NR, pollfinal);
 		}
 
-		/*TODO: check if this part should be here or before the if condition above */
-		NS = VS;
-		if(VS<7){
-			VS++;
-		}
-		else{
-			VS=0;
-		}
+
 		/*------------------------------------------*/
 
 		g_infoSize = 0; /* set info field size to 0 in S frame */
@@ -507,15 +512,6 @@ uint8 AX25_deFrame(uint8 *buffer, uint16 frameSize, uint8 infoSize) {
 	uint16 i = 0;
 	uint16 j;
 	ptrz = (uint8*) &crc;
-
-
-	uint8 NS;
-	uint8 PollFinal;
-	uint8 Sbits;
-	uint8 Mbits;
-
-
-
 	for (; i < AX25_FRAME_MAX_SIZE; i++) {
 		newbuffer[i] = buffer[i];
 	}
@@ -526,32 +522,6 @@ uint8 AX25_deFrame(uint8 *buffer, uint16 frameSize, uint8 infoSize) {
 		}
 		for (j = 0; i < CNTRL_LEN + CNTRL_OFFSET; i++, j++) {
 			g_control_recived[j] = newbuffer[i];
-#if 0
-			uint8 control;
-			/* check which type I or S or U */
-			control = g_control_recived[j];
-			if((control && 0x01) == 0){
-
-				/* type is I frame */
-				g_Received_NR = (control & 0xE0)>> 5;
-
-				NS = (control & 0x0E) >> 1;
-
-				PollFinal = (control & 0x10) >> 4; /* TODO: check if it should be Poll or PollFinal */
-			}
-			else if((control && 0x03) == 1){
-				/* type is S frame */
-				g_Received_NR = (control & 0xE0)>> 5;
-				PollFinal = (control & 0x10) >> 4;
-				Sbits = (control & 0x0C) >> 2;
-			}
-			else{
-				/* type is U frame */
-				Mbits = (control & 0xEC)>> 2;
-				PollFinal = (control & 0x10) >> 4;
-
-			}
-#endif
 		}
 		for (j = 0; i < infoSize + INFO_OFFSET; i++, j++) {
 			g_info_reciver[j] = newbuffer[i];
@@ -562,55 +532,35 @@ uint8 AX25_deFrame(uint8 *buffer, uint16 frameSize, uint8 infoSize) {
 		crc = computeCRC(newbuffer, &i);
 		ptrz++;
 		if (*ptrz == newbuffer[i]) {
-
 			i++;
 			ptrz--;
 			if (*ptrz == newbuffer[i]) {
 				/*TODO: make flag RX_CRC (True or False) */
 				flag_RX_crc = SET;
 				i++;
-				printf("**received frame**\n");
+				printf("\n**received frame**\n");
 				if (newbuffer[i] == 0x7E) {
 					printf("flag=: %x", newbuffer[i]);
-					printf("\n address:\n");
+					printf("\n address:\t");
 					for (i = 0; i < ADDR_LEN; i++) {
-						//printf("address[%d]=%x\t", i, recived_adrress[i]);
-
 						printf("%x", g_recived_adrress[i]);
 					}
-					printf("\n control byte\n");
+					printf("\n control byte\t");
 					for (i = 0; i < CNTRL_LEN; i++) {
 						printf("control[%d]=%x\t", i, g_control_recived[i]);
-						//						printf("\n control byte details \n");
-						//
-						//						printf("\n NR value is %d \n", g_NR);
-						//						printf("\n NS value is %d \n", NS);
-						//						printf("\n PollFinal value is %d \n", PollFinal);
-						//						printf("\n Mbits value is %d \n", Mbits);
-						//						printf("\n Sbits value is %d \n", Sbits);
-
-						printf("\n-------------------------------------------------\n");
 					}
-					printf("\n received information\n");
+
 					printf("\n info \n");
 					for (i = 0; i < infoSize; i++) {
-						//	printf("info[%d]=%x\t", i, info_reciver[i]);
 						printf("%x", g_info_reciver[i]);
 					}
-					printf("\n variable padding\n");
-					printf("\n padding\n");
+					printf("\n padding: \t");
 					for (i = 0; i < INFO_MAX_LEN-infoSize; i++) {
-						//printf("padding[%d]=%x\t",i,padding_recived[i]);
-
 						printf("%x", g_padding_recived[i]);
 					}
 					printf("\nFCS\n");
-					//					ptrz--;
-					//					printf("FCS[0]=%x\t", *ptrz);
-					//					ptrz++;
-					//					printf("FCS[1]=%x\t", *ptrz);
 					printf("\n CRC = %x\n", crc);
-					printf("\n flag = %x", newbuffer[AX25_FRAME_MAX_SIZE-1]);
+					printf("\n flag = %x \n", newbuffer[AX25_FRAME_MAX_SIZE-1]);
 
 					flag_Deframing_to_Control = FULL;
 
