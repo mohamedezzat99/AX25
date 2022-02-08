@@ -25,7 +25,7 @@ uint8 flag_TX;
 uint8 flag_RX;
 uint8 flag_busy;
 uint8 flag_RX_crc; /* used in the Manager function to check whether CRC is correct or not */
-
+uint8 flag_info = EMPTY;
 
 extern uint8 flag_SSP_to_Control;
 extern uint8 flag_Control_to_Framing;
@@ -34,6 +34,7 @@ extern uint8 flag_Deframing_to_Control;
 extern uint8 info[SSP_FRAME_MAX_SIZE];
 
 extern 	uint8 g_infoSize;
+extern uint8 flag_SerialTXBuffer;
 
 
 /* -------------------- TX Functions --------------------*/
@@ -113,7 +114,7 @@ void AX25_Manager(uint8* a_control){
 	uint8 Deframing_To_Control_Buffer_Copy[256];
 	static uint8 state = idle;
 	uint8 pollfinal=0;
-	static uint8 VS=7;
+	static uint8 VS=0;
 	static uint8 VR=0;
 	uint8 NS;
 	uint8 NR;
@@ -149,6 +150,7 @@ void AX25_Manager(uint8* a_control){
 				info[i] = SSP_to_Control_Buffer[i];
 			}
 			flag_SSP_to_Control = EMPTY;
+			flag_Control_to_Framing = FULL;
 
 			/*TODO: check from DR. if this part is correct or not */
 			NS=VS;
@@ -257,11 +259,10 @@ void AX25_Manager(uint8* a_control){
 
 		/*TODO: check if this part should be here or after the if condition above */
 		NS = VS;
-		if(VS<7){
+		if (VS < 7) {
 			VS++;
-		}
-		else{
-			VS=0;
+		} else {
+			VS = 0;
 		}
 
 		/* check on CRC flag (in deframe function) if True make RR if False make REJ */
@@ -501,6 +502,9 @@ void AX25_buildFrame(uint8 *buffer, uint8 *info, uint16 *frameSize, uint8 *ADDR,
 	AX25_putCRC(buffer, &i);
 	buffer[i] = 0x7E;
 	*frameSize = i + 1;
+
+	flag_Control_to_Framing = EMPTY; /*  */
+	flag_SerialTXBuffer = FULL;
 }
 
 /* TODO:remind Eng. Ahmed to make bit-stuffing mask */
