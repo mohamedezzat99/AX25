@@ -52,17 +52,17 @@ uint8 AX25_getControl(frameType frameType, frameSecondaryType secondaryType, uin
 	case I:
 		control = (control & 0x1F) | ((NR << 5) & 0xE0); 			/* insert N(R) into control field */
 		control = (control & 0xF1) | ((NS << 1) & 0x0E); 			/* insert N(S) into control field */
-		control = (control & 0xEF) | ((pollFinal<<4) & 0x10); 	/* insert P into control field */
+		control = (control & 0xEF) | ((pollFinal<<4) & 0x10); 		/* insert P into control field */
 		control &= ~(1 << 0); 										/* insert 0 in rightmost bit */
 		break;
 	case S:
 		control = (control & 0x1F) | ((NR << 5) & 0xE0); 			/* insert N(R) into control field */
-		control = (control & 0xEF) | ((pollFinal<<4) & 0x10); 	/* insert P/F into control field */
+		control = (control & 0xEF) | ((pollFinal<<4) & 0x10); 		/* insert P/F into control field */
 		control = (control & 0xFC) | 0x01;							/* insert 01 in the two rightmost bits */
 		control = (control & 0xF3) | ((secondaryType << 2) & 0x0C);	/* insert S bits into their place */
 		break;
 	case U:
-		control = (control & 0xEF) | ((pollFinal<<4) & 0x10); 	/* insert P/F into control field */
+		control = (control & 0xEF) | ((pollFinal<<4) & 0x10); 		/* insert P/F into control field */
 		control = (control & 0xFC) | 0x03;							/* insert 11 in the two rightmost bits */
 		control = (control & 0x13) | (secondaryType & 0xEC);		/* insert M bits into their proper location */
 		break;
@@ -151,12 +151,8 @@ void AX25_Manager(uint8* a_control){
 			}
 			flag_SSP_to_Control = EMPTY;
 			flag_Control_to_Framing = FULL;
-
-			/*TODO: check from DR. if this part is correct or not */
 			NS=VS;
 			NR=VR;
-			/*--------------------end of check part--------------------*/
-
 			*a_control = AX25_getControl(S, RR, NS, NR, pollfinal);
 			flag_TX = SET;
 			state = TX;
@@ -510,7 +506,7 @@ void AX25_buildFrame(uint8 *buffer, uint8 *info, uint16 *frameSize, uint8 *ADDR,
 /* TODO:remind Eng. Ahmed to make bit-stuffing mask */
 
 uint8 AX25_deFrame(uint8 *buffer, uint16 frameSize, uint8 infoSize) {
-	uint8 newbuffer[frameSize];
+	uint8 newbuffer[AX25_FRAME_MAX_SIZE]; // this was set to frameSize, i changed it to AX25_FRAME_MAX_SIZE to test it.
 	uint16 crc;
 	uint8 *ptrz;
 	uint16 i = 0;
@@ -531,7 +527,7 @@ uint8 AX25_deFrame(uint8 *buffer, uint16 frameSize, uint8 infoSize) {
 			g_info_reciver[j] = newbuffer[i];
 		}
 		for (j = 0; i < FCS_OFFSET; i++, j++) {
-			g_padding_recived[j] = newbuffer[i];
+//			g_padding_recived[j] = newbuffer[i];
 		}
 		crc = computeCRC(newbuffer, &i);
 		ptrz++;
@@ -573,6 +569,39 @@ uint8 AX25_deFrame(uint8 *buffer, uint16 frameSize, uint8 infoSize) {
 		}
 	}
 }
+
+#if 1
+void AX25_buildFrame_TEST(uint8 *buffer, uint8 *info, uint8 *ADDR,
+		uint8 control, uint8 infoSize) {
+	uint16 i;
+
+	/* Put flags at the right place in the buffer. */
+	buffer[0] = 0x7E;
+
+	/* Add the address in the buffer. */
+	for (i = 1; i < ADDR_LEN + ADDR_OFFSET; i++) {
+		buffer[i] = ADDR[i - 1];
+	}
+	/* Add the control byte */
+	for (; i < CNTRL_OFFSET + CNTRL_LEN; i++) {
+		buffer[i] = control;
+	}
+	/* Add the info field in the buffer. */
+	for (; i < infoSize + INFO_OFFSET; i++) {
+		buffer[i] = *info;
+		info++;
+	}
+	for (; i < FCS_OFFSET; i++) {
+		buffer[i] = 0xaa;
+	}
+
+	/* Calculation and insertion of the FCS in the buffer. */
+	AX25_putCRC(buffer, &i);
+	buffer[i] = 0x7E;
+}
+
+
+#endif
 
 #if 0
 void AX25_prepareIFrame(TX_FRAME *frame, uint8 control) {

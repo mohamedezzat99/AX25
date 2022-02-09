@@ -83,4 +83,7 @@ void AX25_Manager(uint8 *);
 void AX25_getInfo(uint8 * info);
 void fillBuffer(uint8 *buffer, uint8 size);
 
+void AX25_buildFrame_TEST(uint8 *buffer, uint8 *info, uint8 *ADDR,
+		uint8 control, uint8 infoSize);
+
 #endif /* AX25_H_ */

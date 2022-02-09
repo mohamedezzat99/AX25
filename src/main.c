@@ -11,6 +11,7 @@
 #include "ax25.h"
 
 uint8 SerialTXBuffer[AX25_FRAME_MAX_SIZE];
+uint8 SerialRXBuffer[AX25_FRAME_MAX_SIZE];
 uint8 info[SSP_FRAME_MAX_SIZE];
 uint8 addr[ADDR_LEN] = { 'O', 'N', '4', 'U', 'L', 'G', 0x60, 'O', 'U', 'F',
 		'T', 'I', '1', 0x61 };
@@ -22,6 +23,7 @@ uint8 flag_Control_to_Framing = EMPTY;
 uint8 flag_Control_to_SSP = EMPTY;
 uint8 flag_Deframing_to_Control = EMPTY;
 uint8 flag_SerialTXBuffer = EMPTY;
+uint8 flag_SerialRXBuffer = EMPTY;
 
 uint8 g_infoSize = 236; //temp set as 236
 
@@ -39,13 +41,9 @@ int main() {
 
 
 	uint8 control;
-	//	uint8 addr[ADDR_LEN] = { "ON4ULG", 0x60, 'O', 'U', 'F', 'T', 'I', '1', 0x61};
-
 	uint16 frameSize = 0;
-
-	//	uint8 NR=0;
-	fflush(stdout);
 while(1){
+	//	uint8 NR=0;
 	if (flag_SSP_to_Control == EMPTY) {
 		 AX25_getInfo(info);
 		 flag_SSP_to_Control = FULL;
@@ -53,12 +51,6 @@ while(1){
 
 	if ((flag_SSP_to_Control == FULL && flag_Control_to_Framing == EMPTY) || (flag_Control_to_SSP == EMPTY && flag_Deframing_to_Control == FULL) ) {
 		 AX25_Manager(&control);
-		 // check for ack first
-		 //		flag_SSP_to_Control = EMPTY;
-
-
-//		flag_Control_to_SSP = FULL;
-//		flag_Deframing_to_Control = EMPTY;
 	}
 
 	if (flag_Control_to_Framing == FULL && flag_SerialTXBuffer == EMPTY) {
@@ -74,7 +66,17 @@ while(1){
 //		AX25_deFrame(SerialTXBuffer, frameSize, g_infoSize);
 //	}
 
-//AX25_buildFrame();
-
-}
+	/* for RX Testing */
+	static uint8 rx_NR=0;
+		uint8 rx_control = AX25_getControl(S, REJ, 0, rx_NR, 0);
+		rx_NR++;
+		if (flag_SerialRXBuffer == EMPTY) {
+			AX25_buildFrame_TEST(SerialRXBuffer, info, addr, rx_control, 0);
+			flag_SerialRXBuffer = FULL;
+			if (flag_Deframing_to_Control == EMPTY) {
+				AX25_deFrame(SerialRXBuffer, frameSize, 0);
+			}
+			flag_SerialRXBuffer = EMPTY;
+		}
+	}
 }
