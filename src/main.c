@@ -10,6 +10,9 @@
 
 #include "ax25.h"
 
+#define rxDebug_IFRAME
+#undef rxDebug_SFRAME
+
 uint8 SerialTXBuffer[AX25_FRAME_MAX_SIZE];
 uint8 SerialRXBuffer[AX25_FRAME_MAX_SIZE];
 uint8 info[SSP_FRAME_MAX_SIZE];
@@ -44,11 +47,12 @@ int main() {
 	uint16 frameSize = 0;
 while(1){
 	//	uint8 NR=0;
+#ifdef rxDebug_SFRAME
 	if (flag_SSP_to_Control == EMPTY) {
 		 AX25_getInfo(info);
 		 flag_SSP_to_Control = FULL;
 	}
-
+#endif
 	if ((flag_SSP_to_Control == FULL && flag_Control_to_Framing == EMPTY) || (flag_Control_to_SSP == EMPTY && flag_Deframing_to_Control == FULL) ) {
 		 AX25_Manager(&control);
 	}
@@ -66,8 +70,11 @@ while(1){
 //		AX25_deFrame(SerialTXBuffer, frameSize, g_infoSize);
 //	}
 
-	/* for RX Testing */
-	static uint8 rx_NR=0;
+
+#ifdef rxDebug_SFRAME
+		/* for RX Testing, sending a S frame */
+
+		static uint8 rx_NR = 0;
 		uint8 rx_control = AX25_getControl(S, REJ, 0, rx_NR, 0);
 		rx_NR++;
 		if (flag_SerialRXBuffer == EMPTY) {
@@ -78,5 +85,32 @@ while(1){
 			}
 			flag_SerialRXBuffer = EMPTY;
 		}
+#endif
+
+#ifdef rxDebug_IFRAME
+		/* for RX Testing, sending a I frame */
+
+		/* to test if address is wrong */
+		//		uint8 addr_RX[ADDR_LEN] = { 'B', 'N', '4', 'U', 'L', 'G', 0x60, 'O', 'U', 'F','T', 'I', '1', 0x61 };
+
+
+
+		static uint8 rx_NR = 0;
+		uint8 rx_control = AX25_getControl(I, 0, 0, rx_NR, 0);
+		rx_NR++;
+		fillBuffer(info, g_infoSize);
+		if (flag_SerialRXBuffer == EMPTY) {
+			AX25_buildFrame_TEST(SerialRXBuffer, info, addr, rx_control, g_infoSize);
+
+			/* to test if CRC is wrong */
+			SerialRXBuffer[254]=0xAA;
+
+			flag_SerialRXBuffer = FULL;
+			if (flag_Deframing_to_Control == EMPTY) {
+				AX25_deFrame(SerialRXBuffer, frameSize, g_infoSize);
+			}
+			flag_SerialRXBuffer = EMPTY;
+		}
+#endif
 	}
 }

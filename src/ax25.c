@@ -16,8 +16,7 @@
 uint8 g_pollFinal=0;
 uint8 g_Received_NR=0;
 
-
-uint8 g_recived_adrress[ADDR_LEN], g_control_recived[CNTRL_LEN], g_info_reciver[SSP_FRAME_MAX_SIZE], g_padding_recived[PADDING_LEN];
+uint8 g_received_address[ADDR_LEN], g_control_recived[CNTRL_LEN], g_info_reciver[SSP_FRAME_MAX_SIZE], g_padding_recived[PADDING_LEN];
 
 extern 	uint8 addr[ADDR_LEN];
 
@@ -153,7 +152,7 @@ void AX25_Manager(uint8* a_control){
 			flag_Control_to_Framing = FULL;
 			NS=VS;
 			NR=VR;
-			*a_control = AX25_getControl(S, RR, NS, NR, pollfinal);
+			*a_control = AX25_getControl(S, RR, NS, NR, pollfinal); /* check from dr if it should be I frame and not S frame. */
 			flag_TX = SET;
 			state = TX;
 		}
@@ -165,8 +164,8 @@ void AX25_Manager(uint8* a_control){
 			/* nmla el fo2o b3adha n3ml flag clear */
 			/* TODO: flag_Deframing_to_Control = EMPTY; */
 
-			for(i=0; i<ADDR_LEN;i++){
-				if(addr[i] != myAddress[i])
+			for(i=0; i<ADDR_LEN; i++){
+				if(g_received_address[i] != myAddress[i])
 				{
 					notMyAddress = SET;
 					flag_Deframing_to_Control = EMPTY; /* clears Buffer in case address is not ours */
@@ -246,10 +245,6 @@ void AX25_Manager(uint8* a_control){
 		break;
 
 	case RX:
-
-//		flag_RX = SET;
-
-
 
 		/* Generate Required Control Byte */
 
@@ -505,12 +500,29 @@ void AX25_buildFrame(uint8 *buffer, uint8 *info, uint16 *frameSize, uint8 *ADDR,
 
 /* TODO:remind Eng. Ahmed to make bit-stuffing mask */
 
+
+/*
+ * Description: takes whole frame and splits it into fields (address, control, info).
+ * 				and also checks on the frame flags (namely 0x7E) and the CRC
+ *
+ * Parameters:
+ * 				buffer: the buffer that contains the full frame which will be de-framed.
+ * 				frameSize: the size of the frame.
+ * 				infoSize: the size of the info field in that frame.
+ *
+ * Notes:
+ * 				Sets the De-framing to Control flag
+ *
+ */
+
 uint8 AX25_deFrame(uint8 *buffer, uint16 frameSize, uint8 infoSize) {
 	uint8 newbuffer[AX25_FRAME_MAX_SIZE]; // this was set to frameSize, i changed it to AX25_FRAME_MAX_SIZE to test it.
 	uint16 crc;
 	uint8 *ptrz;
 	uint16 i = 0;
 	uint16 j;
+	flag_RX_crc = CLEAR; /* initially assume CRC is wrong, if CRC is correct it will SET the flag. otherwise it will remain CLEAR */
+
 	ptrz = (uint8*) &crc;
 	for (; i < AX25_FRAME_MAX_SIZE; i++) {
 		newbuffer[i] = buffer[i];
@@ -518,7 +530,7 @@ uint8 AX25_deFrame(uint8 *buffer, uint16 frameSize, uint8 infoSize) {
 
 	if (newbuffer[0] == 0x7E) {
 		for (i = 1, j = 0; i < ADDR_LEN + ADDR_OFFSET; i++, j++) {
-			g_recived_adrress[j] = newbuffer[i];
+			g_received_address[j] = newbuffer[i];
 		}
 		for (j = 0; i < CNTRL_LEN + CNTRL_OFFSET; i++, j++) {
 			g_control_recived[j] = newbuffer[i];
@@ -529,6 +541,7 @@ uint8 AX25_deFrame(uint8 *buffer, uint16 frameSize, uint8 infoSize) {
 		for (j = 0; i < FCS_OFFSET; i++, j++) {
 //			g_padding_recived[j] = newbuffer[i];
 		}
+		flag_Deframing_to_Control = FULL;
 		crc = computeCRC(newbuffer, &i);
 		ptrz++;
 		if (*ptrz == newbuffer[i]) {
@@ -543,7 +556,7 @@ uint8 AX25_deFrame(uint8 *buffer, uint16 frameSize, uint8 infoSize) {
 					printf("flag=: %x", newbuffer[i]);
 					printf("\n address:\t");
 					for (i = 0; i < ADDR_LEN; i++) {
-						printf("%x", g_recived_adrress[i]);
+						printf("%x", g_received_address[i]);
 					}
 					printf("\n control byte\t");
 					for (i = 0; i < CNTRL_LEN; i++) {
@@ -561,9 +574,6 @@ uint8 AX25_deFrame(uint8 *buffer, uint16 frameSize, uint8 infoSize) {
 					printf("\nFCS\n");
 					printf("\n CRC = %x\n", crc);
 					printf("\n flag = %x \n", newbuffer[AX25_FRAME_MAX_SIZE-1]);
-
-					flag_Deframing_to_Control = FULL;
-
 				}
 			}
 		}
